@@ -22,8 +22,8 @@ const int REALLOC_COEFFICIENT   = 2;
 const int MIN_REALLOC_DOWN_SIZE = 16;
 const int REALLOC_DOWN_BORDER   = 4;
 
-const size_t LOG_FILE_NAME_LENGHT     = 24;
-const size_t LOG_FILE_STK_NAME_LENGHT = 8;
+const size_t LOG_FILE_NAME_LENGHT     = 60;
+const size_t LOG_FILE_STK_NAME_LENGHT = 20;
 
 typedef long long Canary_t;
 
@@ -45,14 +45,6 @@ const size_t   TWO_CANARY = 0;
 typedef long long Hash_t;
 const size_t SIZE_OF_STACK_STRUCT = sizeof(Canary_t) * 2 + sizeof(Elem_t*) + sizeof(size_t) * 2 + sizeof(char*) * 3 + sizeof(unsigned) + sizeof(Hash_t) * 2;
 #endif
-
-enum error_t
-    {
-    OK               = 0,
-    ALLOCATION_ERROR = 1,
-    HASH_NOT_COMPARE = 2,
-    FILE_ERROR       = 3
-    };
 
 struct Stack
     {
@@ -107,7 +99,7 @@ error_t FillStack(Stack *stk);
 
 error_t StackPush(Stack *stk, Elem_t value);
 
-error_t StackPop(Stack *stk, Elem_t *ret_val);
+Elem_t  StackPop(Stack *stk);
 
 error_t StackRealloc(Stack* stk, size_t new_capacity);
 

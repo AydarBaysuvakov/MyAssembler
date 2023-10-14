@@ -1,8 +1,9 @@
 in
-pop rax
 in
-pop rbx     ;pop
+div
 in
-pop rcx ;comment
-push 1000        ;push 1000
+in
+div
+sub
+out
 hlt

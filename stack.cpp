@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <string.h>
+#include "headers/constants.h"
 #include "headers/stack.h"
 #include "headers/hash.h"
 
@@ -82,7 +83,7 @@ error_t StackDtor(Stack *stk)
 
 error_t LogFileInit(Stack *stk, const char* name)
     {
-    char file_name[LOG_FILE_NAME_LENGHT] = "logfile(";
+    char file_name[LOG_FILE_NAME_LENGHT] = "logfiles/logfile(";
     strncat(file_name,  name   , LOG_FILE_STK_NAME_LENGHT);
     strncat(file_name, ").html", LOG_FILE_STK_NAME_LENGHT);
 

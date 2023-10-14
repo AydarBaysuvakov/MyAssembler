@@ -89,10 +89,14 @@ error_t DoCompilation(const char* file_from, const char* file_to)
                             AddArgToCode(com, *line + strlen(#name) + 1, comp.code, &comp.cur_pos); \
                             }                                                                       \
                         }                                                                           \
+                    else                                                                            \
 
     for (char** line = comp.program.lines; (line - comp.program.lines) < comp.program.n_lines; line++)
         {
+        if (NULL)
+            {}
         #include "headers/dsl.h"
+        {}
         }
 
     #undef DEF_COM
@@ -131,7 +135,7 @@ error_t AddArgToCode(const int com, const char* data, char* code, size_t *cur_po
         code[*cur_pos] = com | (1 << 5);
         (*cur_pos)++;
 
-        int arg = (int) (atof(data) * MUL_COEFF);
+        int arg = (int) (atof(data));
         int *intCode = (int*) (code + *cur_pos);
         *intCode = arg;
         *cur_pos += sizeof(int);

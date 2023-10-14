@@ -1,7 +1,7 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-const int MUL_COEFF = 1000;
+const int MUL_COEFF = 100;
 
 #define DEF_COM(name, num, ...) command_##name = num,
 
