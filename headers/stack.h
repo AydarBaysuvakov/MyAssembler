@@ -22,8 +22,8 @@ const int REALLOC_COEFFICIENT   = 2;
 const int MIN_REALLOC_DOWN_SIZE = 16;
 const int REALLOC_DOWN_BORDER   = 4;
 
-const size_t LOG_FILE_NAME_LENGHT     = 60;
-const size_t LOG_FILE_STK_NAME_LENGHT = 20;
+const size_t LOG_FILE_MAX_NAME_LENGHT     = 60;
+const size_t LOG_FILE_NAME_LENGHT = 20;
 
 typedef long long Canary_t;
 
@@ -119,7 +119,7 @@ Elem_t* GetDataLeftCanary(const Stack *stk);
 Elem_t* GetDataRightCanary(const Stack *stk);
 #endif
 
-error_t LogFileInit(Stack *stk, const char* name);
+error_t StkLogFileInit(Stack *stk, const char* name);
 
 #ifdef STACK_HASH_PROT
 Hash_t  StackHashFunction(const Stack *stk);

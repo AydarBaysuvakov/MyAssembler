@@ -11,9 +11,9 @@ struct Text
 
 const int EMPTY = 0;
 
-error_t text_ctor(Text *text, const char *file_name);
+error_t TextCtor(Text *text, const char *file_name);
 
-error_t text_dtor(Text *text);
+error_t TextDtor(Text *text);
 
 error_t make_buf(Text *text, const char *file_name);
 

@@ -31,7 +31,7 @@ error_t MyStackCtor(Stack *stk, const char* name, const unsigned line, const cha
     stk->file = file;
     stk->func = func;
 
-    if (LogFileInit(stk, name) == FILE_ERROR)
+    if (StkLogFileInit(stk, name) == FILE_ERROR)
         {
         perror("ERROR: cannot open logfile");
         return FILE_ERROR;
@@ -74,31 +74,22 @@ error_t StackDtor(Stack *stk)
     stk->stack_hash = NOT_VALID_VALUE;
 #endif
 
-    fprintf(stk->logfile, "\t</body>\n" "</html>\n");
-
     fclose(stk->logfile);
 
     return OK;
     }
 
-error_t LogFileInit(Stack *stk, const char* name)
+error_t StkLogFileInit(Stack *stk, const char* name)
     {
-    char file_name[LOG_FILE_NAME_LENGHT] = "logfiles/logfile(";
-    strncat(file_name,  name   , LOG_FILE_STK_NAME_LENGHT);
-    strncat(file_name, ").html", LOG_FILE_STK_NAME_LENGHT);
+    char file_name[LOG_FILE_MAX_NAME_LENGHT] = "logfiles/logfile(";
+    strncat(file_name,  name   , LOG_FILE_NAME_LENGHT);
+    strncat(file_name, ").html", LOG_FILE_NAME_LENGHT);
 
     stk->logfile = fopen(file_name, "w");
     if (stk->logfile == NULL)
         {
         return FILE_ERROR;
         }
-
-    fprintf(stk->logfile,   "<!DOCTYPE HTML>\n"
-                            "<html>\n"
-                            "\t<head>\n"
-                            "\t\t<meta charset=\"utf-8\">\n"
-                            "\t</head>\n"
-                            "\t<body>\n");
 
     return OK;
     }
@@ -160,6 +151,12 @@ Elem_t StackPop(Stack *stk)
         StackDump(stk, state);
         }
 #endif
+
+    if (stk->size == 0)
+        {
+        printf("STACK is empty\n");
+        return POISON;
+        }
 
     Elem_t ret_val = stk->data[--stk->size];
     stk->data[stk->size] = POISON;

@@ -3,7 +3,8 @@
 
 const int MUL_COEFF = 100;
 
-#define DEF_COM(name, num, ...) command_##name = num,
+#define DEF_COM(name, num, ...)         command_##name = num,
+#define MAKE_COND_JUMP(name, num, ...)  cond_##name = num,
 
 enum Commands
     {
@@ -12,6 +13,7 @@ enum Commands
     };
 
 #undef DEF_COM
+#undef MAKE_COND_JUMP
 
 enum error_t
     {
@@ -21,7 +23,8 @@ enum error_t
     BUFFER_OVERFLOW_ERROR = 3,
     CALCULATION_ERROR     = 4,
     HASH_NOT_COMPARE      = 5,
-    SYNTAX_ERROR          = 6
+    SYNTAX_ERROR          = 6,
+    EMPTY_STACK           = 7
     };
 
 #endif//CONSTANTS_H

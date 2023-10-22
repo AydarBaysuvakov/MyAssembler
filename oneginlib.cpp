@@ -6,7 +6,7 @@
 #include "headers/constants.h"
 #include "headers/oneginlib.h"
 
-error_t text_ctor(Text *text, const char *file_name)
+error_t TextCtor(Text *text, const char *file_name)
     {
     assert(text != NULL);
 
@@ -16,7 +16,7 @@ error_t text_ctor(Text *text, const char *file_name)
     return OK;
     }
 
-error_t text_dtor(Text *text)
+error_t TextDtor(Text *text)
     {
     assert(text != NULL);
 

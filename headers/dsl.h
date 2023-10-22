@@ -4,25 +4,22 @@
                     exit(1);
 #define CUR_VALUE   spu.stk.data[spu.stk.size - 1]
 
-DEF_COM (push, 1,  1,   {if ((*spu.ip >> 5) | (1 << 0))
+DEF_COM (push, 1,  1,   {if ((*spu.ip >> 5) & (1 << 0))
                             {
                             spu.ip++;
                             int arg = *((int*) spu.ip) * MUL_COEFF;
                             PUSH(arg);
                             spu.ip += sizeof(int) - 1;
                             }
-                        else if ((*spu.ip >> 5) | (1 << 1))
+                        else if ((*spu.ip >> 5) & (1 << 1))
                             {
                             spu.ip++;
-                            int reg = *((int*) spu.ip);
-                            PUSH(spu.registers[reg]);
-                            spu.ip += sizeof(int) - 1;
+                            PUSH(spu.registers[*spu.ip]);
                             }
                         })
 
 DEF_COM (pop,  2,  1,   {spu.ip++;
-                        int reg = *((int*) spu.ip);
-                        spu.registers[reg] = POP;})
+                        spu.registers[*spu.ip] = POP;})
 
 DEF_COM (in,   3,  0,   {printf("\nВведите данные: ");
                         float arg = 0;
@@ -30,7 +27,9 @@ DEF_COM (in,   3,  0,   {printf("\nВведите данные: ");
                         PUSH((int) (arg * MUL_COEFF));
                         })
 
-DEF_COM (out,  4,  0,   {printf("Нынешнее значение: %f\n", (float) CUR_VALUE / MUL_COEFF);})
+DEF_COM (out,  4,  0,   {printf("Нынешнее значение: %f\n", (float) CUR_VALUE / MUL_COEFF);
+                        StackDump(&spu.stk, 0);
+                        SpuDump(&spu);})
 
 DEF_COM (add,  5,  0,   {PUSH(POP + POP);})
 
@@ -62,3 +61,22 @@ DEF_COM (cos,  12, 0,   {})
 DEF_COM (sqrt, 13, 0,   {})
 
 DEF_COM (hlt,  -1, 0,   {exit(1);})
+
+MAKE_COND_JUMP (jmp,  16,  {spu.ip++;
+                            spu.ip = spu.code + *spu.ip - 1;})
+
+MAKE_COND_JUMP (ja,   17,  {})
+
+MAKE_COND_JUMP (jae,  18,  {})
+
+MAKE_COND_JUMP (jb,   19,  {})
+
+MAKE_COND_JUMP (jbe,  20,  {})
+
+MAKE_COND_JUMP (je,   21,  {})
+
+MAKE_COND_JUMP (jne,  22,  {})
+
+MAKE_COND_JUMP (call, 23,  {})
+
+DEF_COM (ret,  24,  0,  {})

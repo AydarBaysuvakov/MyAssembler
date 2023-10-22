@@ -1,9 +1,23 @@
+BASA:
+push 4
+out
+ret
+
+
+in
+out
+
+
+
+jmp BASA
+push 10
+div
+jmp BASA
+DED:
 in
 in
 div
-in
-in
-div
+jmp BASA
 sub
 out
 hlt
