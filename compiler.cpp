@@ -39,7 +39,7 @@ error_t CompilerCtor(Compiler* comp, const char* file_from, const char* file_to)
     TextCtor(&comp->program, file_from);
 
     comp->cur_pos   = 0;
-    comp->code_size = GetCodeSize(&comp->program);
+    comp->code_size = comp->program.n_lines * (sizeof(int) + 1);
 
     comp->code = (char*) calloc(comp->code_size, sizeof(char));
     if (comp->code == NULL)
@@ -76,59 +76,75 @@ error_t DoCompilation(const char* file_from, const char* file_to)
     Compiler comp = {};
     CompilerCtor(&comp, file_from, file_to);
 
-    #define DEF_COM(name, com, args, ...)                                                           \
-                    if (!strncmp(#name, *line, strlen(#name)))                                      \
-                        {                                                                           \
-                        if (!args)                                                                  \
-                            {                                                                       \
-                            comp.code[comp.cur_pos] = command_##name;                               \
-                            comp.cur_pos++;                                                         \
-                            }                                                                       \
-                        if (args)                                                                   \
-                            {                                                                       \
-                            AddArgToCode(com, *line + strlen(#name) + 1, comp.code, &comp.cur_pos); \
-                            }                                                                       \
-                        }                                                                           \
-                    else                                                                            \
+    TextToCode(&comp);
+    TextToCode(&comp);
 
-    #define MAKE_COND_JUMP(name, com, ...)                                                          \
-                    if (!strncmp(#name, *line, strlen(#name)))                                      \
-                        {                                                                           \
-                        AddJumpCond(com, *line + strlen(#name) + 1, &comp);                         \
-                        }                                                                           \
-                    else                                                                            \
+    fwrite(comp.code, sizeof(char), comp.cur_pos, comp.file_to);
 
-    for (char** line = comp.program.lines; (line - comp.program.lines) < comp.program.n_lines; line++)
+    CompilerDtor(&comp);
+
+    return OK;
+    }
+
+error_t TextToCode(Compiler *comp)
+    {
+    assert(comp != NULL);
+
+    comp->cur_pos = 0;
+
+    #define DEF_COM(name, com, args, ...)                                                               \
+                    if (!strncmp(#name, *line, strlen(#name)))                                          \
+                        {                                                                               \
+                        if (!args)                                                                      \
+                            {                                                                           \
+                            comp->code[comp->cur_pos] = command_##name;                                 \
+                            comp->cur_pos++;                                                            \
+                            }                                                                           \
+                        if (args)                                                                       \
+                            {                                                                           \
+                            AddArgToCode(com, *line + strlen(#name) + 1, comp->code, &comp->cur_pos);   \
+                            }                                                                           \
+                        }                                                                               \
+                    else                                                                                \
+
+    #define MAKE_COND_JUMP(name, com, ...)                                                              \
+                    if (!strncmp(#name, *line, strlen(#name)))                                          \
+                        {                                                                               \
+                        AddJumpCond(com, *line + strlen(#name) + 1, comp);                              \
+                        }                                                                               \
+                    else                                                                                \
+
+    for (char** line = comp->program.lines; (line - comp->program.lines) < comp->program.n_lines; line++)
         {
         #include "headers/dsl.h"
         {
         char* ch = strchr(*line, ':');
         if (ch == *line)
             {
-            comp.labels[comp.labels_num].label = ++ch;
+            comp->labels[comp->labels_num].label = ++ch;
             int lenght = 0;
             while (!isspace(*ch) && *ch != '\0')
                 {
                 ch++;
                 lenght++;
                 }
-            comp.labels[comp.labels_num].lenght = lenght;
-            comp.labels[comp.labels_num].pos    = comp.cur_pos;
-            comp.labels_num++;
+            comp->labels[comp->labels_num].lenght = lenght;
+            comp->labels[comp->labels_num].pos    = comp->cur_pos;
+            comp->labels_num++;
             }
         else if (ch)
             {
             ch = *line;
-            comp.labels[comp.labels_num].label = *line;
+            comp->labels[comp->labels_num].label = *line;
             int lenght = 0;
             while (*ch != ':')
                 {
                 ch++;
                 lenght++;
                 }
-            comp.labels[comp.labels_num].lenght = lenght;
-            comp.labels[comp.labels_num].pos    = comp.cur_pos;
-            comp.labels_num++;
+            comp->labels[comp->labels_num].lenght = lenght;
+            comp->labels[comp->labels_num].pos    = comp->cur_pos;
+            comp->labels_num++;
             }
         else if (**line)
             {
@@ -140,10 +156,6 @@ error_t DoCompilation(const char* file_from, const char* file_to)
 
     #undef DEF_COM
     #undef MAKE_JUMP_COND
-
-    fwrite(comp.code, sizeof(char), comp.code_size, comp.file_to);
-
-    CompilerDtor(&comp);
 
     return OK;
     }
@@ -201,6 +213,8 @@ error_t AddJumpCond(const int com, char* data, Compiler* comp)
 
     SkipData(&data, SkipSpace);
 
+    Bool flag = False;
+
     for (int lab = 0; lab < comp->labels_num; lab++)
         {
         if (!strncmp(comp->labels[lab].label, data, comp->labels[lab].lenght))
@@ -210,7 +224,19 @@ error_t AddJumpCond(const int com, char* data, Compiler* comp)
 
             comp->code[comp->cur_pos] = comp->labels[lab].pos;
             comp->cur_pos++;
+
+            flag = True;
+            break;
             }
+        }
+
+    if (!flag)
+        {
+        comp->code[comp->cur_pos] = com | (1 << 5);
+        comp->cur_pos++;
+
+        comp->code[comp->cur_pos] = -1;
+        comp->cur_pos++;
         }
 
     SkipData(&data, SkipLetter);
@@ -223,25 +249,6 @@ error_t AddJumpCond(const int com, char* data, Compiler* comp)
         }
 
     return OK;
-    }
-
-
-size_t GetCodeSize(Text* program)
-    {
-    assert(program != NULL);
-
-    int code_size = 0;
-
-    for (char** line = program->lines; (line - program->lines) < program->n_lines; line++)
-        {
-        if (!strncmp("push", *line, 4) || !strncmp("pop", *line, 3) || !strncmp("j", *line, 1) || !strncmp("call", *line, 4))
-            {
-            code_size += sizeof(int);
-            }
-        code_size++;
-        }
-
-    return code_size;
     }
 
 error_t SkipData(char** data, Mode mode)

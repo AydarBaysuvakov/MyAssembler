@@ -13,11 +13,12 @@ struct SPU
     const char* exe_file;
 
     Stack stk = {};
+    Stack return_codes = {};
 
     int registers[REGISTER_COUNT];
 
     char *code;
-    char *ip;
+    int   ip;
     size_t code_size;
 
     const char  *name;

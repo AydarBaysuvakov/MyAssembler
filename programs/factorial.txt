@@ -1,0 +1,24 @@
+in
+pop rax
+push 1
+pop rbx
+call factorial
+push rbx
+out
+hlt
+
+factorial:
+push rax
+push 0
+je fact_end
+push rax
+push rax
+push 1
+sub
+pop rax
+call factorial
+push rbx
+mul
+pop rbx
+:fact_end
+ret

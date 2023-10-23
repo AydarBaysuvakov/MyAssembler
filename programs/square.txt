@@ -1,0 +1,32 @@
+in
+pop rax
+in
+pop rbx
+in
+pop rcx
+
+push rax
+push rbx
+push rcx
+call DISCR
+
+push rdx
+out
+
+hlt
+
+DISCR:
+pop rcx;
+pop rbx;
+pop rax;
+push rbx
+push rbx
+mul
+push 4
+push rcx
+push rax
+mul
+mul
+sub
+pop rdx
+ret

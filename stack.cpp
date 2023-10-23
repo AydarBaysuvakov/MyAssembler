@@ -155,6 +155,7 @@ Elem_t StackPop(Stack *stk)
     if (stk->size == 0)
         {
         printf("STACK is empty\n");
+        exit(1);
         return POISON;
         }
 

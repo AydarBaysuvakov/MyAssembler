@@ -4,22 +4,23 @@
                     exit(1);
 #define CUR_VALUE   spu.stk.data[spu.stk.size - 1]
 
-DEF_COM (push, 1,  1,   {if ((*spu.ip >> 5) & (1 << 0))
+DEF_COM (push, 1,  1,   {char arg_t = spu.code[spu.ip] >> 5;
+                        if (arg_t & (1 << 0))
                             {
                             spu.ip++;
-                            int arg = *((int*) spu.ip) * MUL_COEFF;
+                            int arg = *((int*) &spu.code[spu.ip]) * MUL_COEFF;
                             PUSH(arg);
                             spu.ip += sizeof(int) - 1;
                             }
-                        else if ((*spu.ip >> 5) & (1 << 1))
+                        else if (arg_t & (1 << 1))
                             {
                             spu.ip++;
-                            PUSH(spu.registers[*spu.ip]);
+                            PUSH(spu.registers[spu.code[spu.ip]]);
                             }
                         })
 
 DEF_COM (pop,  2,  1,   {spu.ip++;
-                        spu.registers[*spu.ip] = POP;})
+                        spu.registers[spu.code[spu.ip]] = POP;})
 
 DEF_COM (in,   3,  0,   {printf("\nВведите данные: ");
                         float arg = 0;
@@ -29,6 +30,7 @@ DEF_COM (in,   3,  0,   {printf("\nВведите данные: ");
 
 DEF_COM (out,  4,  0,   {printf("Нынешнее значение: %f\n", (float) CUR_VALUE / MUL_COEFF);
                         StackDump(&spu.stk, 0);
+                        StackDump(&spu.return_codes, 0);
                         SpuDump(&spu);})
 
 DEF_COM (add,  5,  0,   {PUSH(POP + POP);})
@@ -63,20 +65,40 @@ DEF_COM (sqrt, 13, 0,   {})
 DEF_COM (hlt,  -1, 0,   {exit(1);})
 
 MAKE_COND_JUMP (jmp,  16,  {spu.ip++;
-                            spu.ip = spu.code + *spu.ip - 1;})
+                            spu.ip = spu.code[spu.ip] - 1;})
 
-MAKE_COND_JUMP (ja,   17,  {})
+MAKE_COND_JUMP (jae,   17,  {spu.ip++;
+                            int a = POP;
+                            int b = POP;
+                            if (b >= a) spu.ip = spu.code[spu.ip] - 1;})
 
-MAKE_COND_JUMP (jae,  18,  {})
+MAKE_COND_JUMP (ja,  18,  {spu.ip++;
+                            int a = POP;
+                            int b = POP;
+                            if (b > a) spu.ip = spu.code[spu.ip] - 1;})
 
-MAKE_COND_JUMP (jb,   19,  {})
+MAKE_COND_JUMP (jbe,   19,  {spu.ip++;
+                            int a = POP;
+                            int b = POP;
+                            if (b <= a) spu.ip = spu.code[spu.ip] - 1;})
 
-MAKE_COND_JUMP (jbe,  20,  {})
+MAKE_COND_JUMP (jb,  20,  {spu.ip++;
+                            int a = POP;
+                            int b = POP;
+                            if (b < a) spu.ip = spu.code[spu.ip] - 1;})
 
-MAKE_COND_JUMP (je,   21,  {})
+MAKE_COND_JUMP (je,   21,  {spu.ip++;
+                            int a = POP;
+                            int b = POP;
+                            if (a == b) spu.ip = spu.code[spu.ip] - 1;})
 
-MAKE_COND_JUMP (jne,  22,  {})
+MAKE_COND_JUMP (jne,  22,  {spu.ip++;
+                            int a = POP;
+                            int b = POP;
+                            if (a != b) spu.ip = spu.code[spu.ip] - 1;})
 
-MAKE_COND_JUMP (call, 23,  {})
+MAKE_COND_JUMP (call, 23,  {spu.ip++;
+                            StackPush(&spu.return_codes, spu.ip);
+                            spu.ip = spu.code[spu.ip] - 1;})
 
-DEF_COM (ret,  24,  0,  {})
+DEF_COM (ret,  24,  0,  {spu.ip = StackPop(&spu.return_codes);})

@@ -30,6 +30,7 @@ error_t MySpuCtor(SPU* spu, const char* exe_file, const char* name, const unsign
     spu->exe_file = exe_file;
 
     StackCtor(&spu->stk);
+    StackCtor(&spu->return_codes);
 
     memset(spu->registers, 0, REGISTER_COUNT);
 
@@ -55,7 +56,7 @@ error_t MySpuCtor(SPU* spu, const char* exe_file, const char* name, const unsign
         }
 
     fread(spu->code, sizeof(char), spu->code_size, fp);
-    spu->ip = spu->code;
+    spu->ip = 0;
 
     if (fclose(fp) == EOF)
         {
@@ -82,12 +83,13 @@ error_t SpuDtor(SPU* spu)
     assert(spu != NULL);
 
     StackDtor(&spu->stk);
+    StackDtor(&spu->return_codes);
 
     memset(spu->registers, 0, REGISTER_COUNT);
 
     spu->code_size = 0;
 
-    spu->ip = nullptr;
+    spu->ip = 0;
 
     free(spu->code);
 
@@ -113,9 +115,9 @@ error_t Run(const char* file)
                             code;                                                                   \
                             break;                                                                  \
 
-    for (; (spu.ip - spu.code) < spu.code_size; spu.ip++)
+    for (; spu.ip < spu.code_size; spu.ip++)
         {
-        int command = *spu.ip % (1 << 5);
+        int command = spu.code[spu.ip] % (1 << 5);
         switch (command)
             {
             #include "headers/dsl.h"
@@ -157,8 +159,8 @@ error_t MySpuDump(const SPU *spu, const char* name, const unsigned line, const c
         {
         fprintf(spu->logfile, " [%x]", spu->code[iter]);
         }
-    fprintf(spu->logfile, "\n%ld\n\t     ", (spu->ip - spu->code));
-    for (size_t iter = 0; iter < (spu->ip - spu->code); iter++)
+    fprintf(spu->logfile, "\n%d\n\t     ", spu->ip);
+    for (size_t iter = 0; iter < spu->ip; iter++)
         {
         fprintf(spu->logfile, "    ");
         }

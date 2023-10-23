@@ -1,0 +1,30 @@
+in
+pop rax
+
+push 1
+pop rbx
+
+push 1
+pop rcx
+
+while:
+push rax
+push rbx
+jb END
+
+push rcx
+push rbx
+mul
+pop rcx
+
+push rbx
+push 1
+add
+pop rbx
+
+jmp while
+
+END:
+push rcx ;вывод
+out
+hlt

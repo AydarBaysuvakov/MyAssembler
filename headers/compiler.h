@@ -1,8 +1,8 @@
 #ifndef COMPILER_H
 #define COMPILER_H
 
-const char* OUTFILE = "a.txt";
-const int LABELS_COUNT = 20;
+const   char*   OUTFILE         = "programs/out.bin";
+const   int     LABELS_COUNT    = 20;
 
 struct Label
     {
@@ -27,9 +27,16 @@ struct Compiler
 
 enum Mode
     {
-    SkipSpace  = 1,
-    SkipLetter = 0
+    SkipLetter = 0,
+    SkipSpace  = 1
     };
+
+enum Bool
+    {
+    False = 0,
+    True  = 1
+    };
+
 
 error_t CompilerCtor(Compiler *comp, const char* file_from, const char* file_to);
 
@@ -37,12 +44,12 @@ error_t CompilerDtor(Compiler* comp);
 
 error_t DoCompilation(const char* file_from, const char* file_to);
 
+error_t TextToCode(Compiler *comp);
+
 error_t AddArgToCode(const int com, char* data, char* code, size_t *cur_pos);
 
-size_t GetCodeSize(Text* program);
+error_t AddJumpCond(const int com, char* data, Compiler* comp);
 
 error_t SkipData(char** data, Mode mode);
-
-error_t AddJumpCond(const int com, char* data, Compiler* comp);
 
 #endif//COMPILER_H
