@@ -6,18 +6,16 @@
 #define SpuCtor(spu, exe)   MySpuCtor((spu), (exe), #spu, SPU_PASS_ARGS)
 #define SpuDump(spu)        MySpuDump((spu),        #spu, SPU_PASS_ARGS)
 
-const int REGISTER_COUNT = 4;
-
 struct SPU
     {
     const char* exe_file;
 
     Stack stk = {};
-    Stack return_codes = {};
 
     int registers[REGISTER_COUNT];
+    int memory[MEMORY_SIZE];
 
-    char *code;
+    unsigned char *code;
     int   ip;
     size_t code_size;
 
@@ -33,10 +31,12 @@ error_t MySpuCtor(SPU* spu, const char* file, SPU_DEFN_ARGS);
 
 error_t SpuDtor(SPU* spu);
 
-error_t Run(const char* file);
+error_t SpuRun(const char* file);
 
 error_t MySpuDump(const SPU *spu, SPU_DEFN_ARGS);
 
 error_t SpuLogFileInit(SPU *spu, const char* name);
 
-#endif//SPU_H
+error_t MemDump(SPU *spu);
+
+#endif // SPU_H

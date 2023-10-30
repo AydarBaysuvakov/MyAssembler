@@ -17,7 +17,7 @@ error_t TextDtor(Text *text);
 
 error_t make_buf(Text *text, const char *file_name);
 
-error_t fill_buf(char *buf, size_t buf_size, FILE *fp);
+int fill_buf(char *buf, size_t buf_size, FILE *fp);
 
 error_t lines_partition(Text *text);
 

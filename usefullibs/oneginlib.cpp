@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <sys/stat.h>
-#include "headers/constants.h"
-#include "headers/oneginlib.h"
+#include "../headers/constants.h"
+#include "oneginlib.h"
 
 error_t TextCtor(Text *text, const char *file_name)
     {
@@ -45,6 +45,7 @@ error_t make_buf(Text *text, const char *file_name)
     if (text->buf_size == -1)
         {
         perror("ERROR: fstat() func returned -1");
+        fclose(fp);
         return FILE_ERROR;
         }
 
@@ -52,32 +53,32 @@ error_t make_buf(Text *text, const char *file_name)
     if (text->buf == nullptr)
         {
         perror("ERROR: cannot allocate memory");
+        fclose(fp);
         return ALLOCATION_ERROR;
         }
 
     if (fill_buf(text->buf, text->buf_size, fp))
         {
         perror("ERROR: buffer overflow");
+        free(text->buf);
+        fclose(fp);
         return BUFFER_OVERFLOW_ERROR;
         }
 
-    if (fclose(fp) == EOF)
-        {
-        perror("ERROR: cannot close file");
-        return FILE_ERROR;
-        }
+    fclose(fp);
 
     return OK;
     }
 
-error_t fill_buf(char *buf, size_t buf_size, FILE *fp)
+int fill_buf(char *buf, size_t buf_size, FILE *fp)
     {
     assert(fp  != NULL);
     assert(buf != NULL);
+    assert(buf_size >= 0);
 
     fread(buf, sizeof(*buf), buf_size, fp);
 
-    return OK;
+    return ferror(fp);
     }
 
 error_t lines_partition(Text *text)
@@ -166,6 +167,12 @@ error_t print_text(Text* text, const char* file_name)
         }
 
     FILE *fp = fopen(file_name, "w");
+    if (fp == NULL)
+        {
+        perror("ERROR: cannot open file");
+        return FILE_ERROR;
+        }
+
     text_to_file(text, fp);
     fclose(fp);
 

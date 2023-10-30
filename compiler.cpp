@@ -4,29 +4,31 @@
 #include <stdlib.h>
 #include <assert.h>
 #include "headers/constants.h"
-#include "headers/oneginlib.h"
+#include "usefullibs/oneginlib.h"
 #include "headers/compiler.h"
-
 
 int main(int argc, char *argv[])
     {
+    const char* file_from = nullptr;
+    const char* file_to   = DEFAULT_BIN_FILENAME;
+
     if (argc < 2)
         {
-        printf("File is not found");
+        printf("Incorrect args number");
         return FILE_ERROR;
         }
     else if (argc == 2)
         {
-        const char* file_from = argv[1];
-        const char* file_to   = OUTFILE;
-        DoCompilation(file_from, file_to);
+        file_from = argv[1];
         }
     else if (argc > 2)
         {
-        const char* file_from = argv[1];
-        const char* file_to   = argv[2];
-        DoCompilation(file_from, file_to);
+        file_from = argv[1];
+        file_to   = argv[2];
         }
+
+    DoCompilation(file_from, file_to);
+    return 0;
     }
 
 error_t CompilerCtor(Compiler* comp, const char* file_from, const char* file_to)
@@ -38,17 +40,25 @@ error_t CompilerCtor(Compiler* comp, const char* file_from, const char* file_to)
     comp->program = {};
     TextCtor(&comp->program, file_from);
 
+    comp->labels_num    = 0;
+    comp->registers_num = 0;
+
     comp->cur_pos   = 0;
     comp->code_size = comp->program.n_lines * (sizeof(int) + 1);
 
     comp->code = (char*) calloc(comp->code_size, sizeof(char));
     if (comp->code == NULL)
         {
-        perror("ERROR: cannot allocate memory");
+        perror("ERROR: cannot allocate memory"); // try
         return ALLOCATION_ERROR;
         }
 
     comp->file_to   = fopen(file_to,  "wb");
+    if (comp->file_to == NULL)
+        {
+        perror("ERROR: cannot open file");
+        return FILE_ERROR;
+        }
 
     return OK;
     }
@@ -92,8 +102,8 @@ error_t TextToCode(Compiler *comp)
 
     comp->cur_pos = 0;
 
-    #define DEF_COM(name, com, args, ...)                                                               \
-                    if (!strncmp(#name, *line, strlen(#name)))                                          \
+    #define DEF_CMD(name, cmd, args, ...)                                                               \
+                    else if (!strncmp(#name, comand, strlen(#name)))                                    \
                         {                                                                               \
                         if (!args)                                                                      \
                             {                                                                           \
@@ -102,90 +112,139 @@ error_t TextToCode(Compiler *comp)
                             }                                                                           \
                         if (args)                                                                       \
                             {                                                                           \
-                            AddArgToCode(com, *line + strlen(#name) + 1, comp->code, &comp->cur_pos);   \
+                            AddArgToCode(cmd, comand + strlen(#name) + 1, comp);                        \
                             }                                                                           \
-                        }                                                                               \
-                    else                                                                                \
+                        }                                                                                         \
 
-    #define MAKE_COND_JUMP(name, com, ...)                                                              \
-                    if (!strncmp(#name, *line, strlen(#name)))                                          \
+    #define MAKE_COND_JUMP(name, cmd, ...)                                                              \
+                    else if (!strncmp(#name, comand, strlen(#name)))                                    \
                         {                                                                               \
-                        AddJumpCond(com, *line + strlen(#name) + 1, comp);                              \
-                        }                                                                               \
-                    else                                                                                \
+                        AddArgToCode(cmd, comand + strlen(#name) + 1, comp);                            \
+                        }
 
-    for (char** line = comp->program.lines; (line - comp->program.lines) < comp->program.n_lines; line++)
+    for (int line = 0; line < comp->program.n_lines; line++)
         {
+        char* comand = comp->program.lines[line];
+        SkipSpace(&comand);
+
+        if (0);
         #include "headers/dsl.h"
-        {
-        char* ch = strchr(*line, ':');
-        if (ch == *line)
+        else
             {
-            comp->labels[comp->labels_num].label = ++ch;
-            int lenght = 0;
-            while (!isspace(*ch) && *ch != '\0')
+            char* ch = strchr(comand, ':');
+            if (ch == comand)
                 {
-                ch++;
-                lenght++;
+                comp->labels[comp->labels_num].name   = ++ch;
+                SkipLetter(&ch);
+                comp->labels[comp->labels_num].length = ch - comand;
+                comp->labels[comp->labels_num].index  = comp->cur_pos;
+                comp->labels_num++;
                 }
-            comp->labels[comp->labels_num].lenght = lenght;
-            comp->labels[comp->labels_num].pos    = comp->cur_pos;
-            comp->labels_num++;
-            }
-        else if (ch)
-            {
-            ch = *line;
-            comp->labels[comp->labels_num].label = *line;
-            int lenght = 0;
-            while (*ch != ':')
+            else if (ch)
                 {
-                ch++;
-                lenght++;
+                ch = comand;
+                comp->labels[comp->labels_num].name   = comand;
+                SkipTillCollon(&ch);
+                comp->labels[comp->labels_num].length = ch - comand;
+                comp->labels[comp->labels_num].index  = comp->cur_pos;
+                comp->labels_num++;
                 }
-            comp->labels[comp->labels_num].lenght = lenght;
-            comp->labels[comp->labels_num].pos    = comp->cur_pos;
-            comp->labels_num++;
+            else if (*comand)
+                {
+                printf("ERROR: %s is wrong command code_pos = %ld\n", comand, comp->cur_pos);
+                return SYNTAX_ERROR;
+                }
             }
-        else if (**line)
-            {
-            printf("ERROR: %s is wrong command\n", *line);
-            return SYNTAX_ERROR;
-            }
-        }
         }
 
-    #undef DEF_COM
-    #undef MAKE_JUMP_COND
+    #undef DEF_CMD
+    #undef MAKE_COND_JUMP
 
     return OK;
     }
 
-error_t AddArgToCode(const int com, char* data, char* code, size_t* cur_pos)
+error_t AddArgToCode(const int cmd, char* data, Compiler* comp)
     {
-    assert(2 >= com && com > 0);
     assert(data != NULL);
-    assert(code != NULL);
-    assert(cur_pos != NULL);
+    assert(comp != NULL);
 
-    SkipData(&data, SkipSpace);
+    const char is_cond_jump = (1 <= cmd && cmd <= 2) ? 0 : 1;
 
-    if (data[0] == 'r' && 'a' <= data[1] && data[1] <= 'd' && data[2] == 'x')
+    SkipSpace(&data);
+
+    if ((isdigit(data[0]) || data[0] == '-' || data[0] == '+') && cmd == command_push)
         {
-        code[*cur_pos] = com | (1 << 6);
-        (*cur_pos)++;
+        comp->code[comp->cur_pos] = cmd | CmdData;
+        comp->cur_pos++;
 
-        code[*cur_pos] = data[1] - 'a';
-        (*cur_pos)++;
+        int arg = (int) (atof(data) * FIXED_POINT_MULTIPIER); // errors
+        *(int*)(comp->code + comp->cur_pos) = arg;
+        comp->cur_pos += sizeof(int); // typedef
         }
-    else if (isdigit(data[0]))
+    else if (data[0] == '\'' && data[2] == '\'' && cmd == command_push)
         {
-        code[*cur_pos] = com | (1 << 5);
-        (*cur_pos)++;
+        comp->code[comp->cur_pos] = cmd | CmdData;
+        comp->cur_pos++;
 
-        int arg = (int) (atof(data));
-        int *intCode = (int*) (code + *cur_pos);
-        *intCode = arg;
-        *cur_pos += sizeof(int);
+        *(int*)(comp->code + comp->cur_pos) = data[1] * FIXED_POINT_MULTIPIER;
+        comp->cur_pos += sizeof(int);
+        data += 3;
+        }
+    else if (data[0] == '[' && !is_cond_jump)
+        {
+        comp->code[comp->cur_pos] = cmd | CmdMemory;
+        comp->cur_pos++;
+        data++;
+
+        *(int*)(comp->code + comp->cur_pos) = atoi(data);
+        comp->cur_pos += sizeof(int);
+        }
+    else if (isalpha(data[0]))
+        {
+        int arg_found = 0;
+        for (int iter = 0; iter < (is_cond_jump) ? comp->labels_num : comp->registers_num; iter++)
+            {
+            if (((is_cond_jump) ? comp->labels[iter].name : comp->registers[iter].name) == NULL)
+                {
+                break;
+                }
+            else if (!strncmp((is_cond_jump) ? comp->labels[iter].name : comp->registers[iter].name,\
+            data, (is_cond_jump) ? comp->labels[iter].length : comp->registers[iter].length))
+                {
+                comp->code[comp->cur_pos] = cmd | CmdRegister;
+                comp->cur_pos++;
+
+                *(int*)(comp->code + comp->cur_pos) = (is_cond_jump) ? comp->labels[iter].index : comp->registers[iter].index;
+                comp->cur_pos += sizeof(int);
+
+                arg_found = 1;
+                break;
+                }
+            }
+        if (!arg_found)
+            {
+            int index = comp->registers_num;
+            if (!is_cond_jump)
+                {
+                if (comp->registers_num == REGISTER_COUNT)
+                    {
+                    printf("SYNTAX ERROR: to many registers(available only 4, use memory)\n");
+                    return SYNTAX_ERROR;
+                    }
+                comp->registers[index].name    = data;
+                char* word = data;
+                SkipLetter(&word);
+                comp->registers[index].length  = word - data;
+                comp->registers[index].index   = index;
+                comp->registers_num++;
+                }
+
+            comp->code[comp->cur_pos] = cmd | CmdRegister;
+            comp->cur_pos++;
+
+            *(int*)(comp->code + comp->cur_pos) = (is_cond_jump) ? -1 : comp->registers[index].index;
+            comp->cur_pos += sizeof(int);
+            }
         }
     else
         {
@@ -193,12 +252,11 @@ error_t AddArgToCode(const int com, char* data, char* code, size_t* cur_pos)
         return SYNTAX_ERROR;
         }
 
-    SkipData(&data, SkipLetter);
-    SkipData(&data, SkipSpace);
+    SkipLetter(&data);
+    SkipSpace(&data);
 
     if (*data != '\0')
         {
-        printf("here");
         printf("ERROR: %s is wrong command\n", data);
         return SYNTAX_ERROR;
         }
@@ -206,64 +264,38 @@ error_t AddArgToCode(const int com, char* data, char* code, size_t* cur_pos)
     return OK;
     }
 
-error_t AddJumpCond(const int com, char* data, Compiler* comp)
+char** SkipSpace(char** data)
     {
     assert(data != NULL);
-    assert(comp != NULL);
 
-    SkipData(&data, SkipSpace);
-
-    Bool flag = False;
-
-    for (int lab = 0; lab < comp->labels_num; lab++)
-        {
-        if (!strncmp(comp->labels[lab].label, data, comp->labels[lab].lenght))
-            {
-            comp->code[comp->cur_pos] = com | (1 << 5);
-            comp->cur_pos++;
-
-            comp->code[comp->cur_pos] = comp->labels[lab].pos;
-            comp->cur_pos++;
-
-            flag = True;
-            break;
-            }
-        }
-
-    if (!flag)
-        {
-        comp->code[comp->cur_pos] = com | (1 << 5);
-        comp->cur_pos++;
-
-        comp->code[comp->cur_pos] = -1;
-        comp->cur_pos++;
-        }
-
-    SkipData(&data, SkipLetter);
-    SkipData(&data, SkipSpace);
-
-    if (*data != '\0')
-        {
-        printf("ERROR: %s is wrong command\n", data);
-        return SYNTAX_ERROR;
-        }
-
-    return OK;
-    }
-
-error_t SkipData(char** data, Mode mode)
-    {
-    if (mode)
-        {
-        while (isspace(**data))
+    while (isspace(**data))
             {
             (*data)++;
             }
-        return OK;
-        }
+
+    return data;
+    }
+
+char** SkipLetter(char** data)
+    {
+    assert(data != NULL);
+
     while (!isspace(**data) && **data != '\0')
             {
             (*data)++;
             }
-    return OK;
+
+    return data;
+    }
+
+char** SkipTillCollon(char** data)
+    {
+    assert(data != NULL);
+
+    while (**data != ':' && **data != '\0')
+            {
+            (*data)++;
+            }
+
+    return data;
     }

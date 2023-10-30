@@ -8,17 +8,21 @@ pop rcx
 push rax
 push rbx
 push rcx
-call DISCR
+call SolveSquare
 
-push rdx
+push [1]
+out
+push [2]
 out
 
 hlt
 
 DISCR:
-pop rcx;
-pop rbx;
-pop rax;
+pop [0]
+pop rcx
+pop rbx
+pop rax
+push [0]
 push rbx
 push rbx
 mul
@@ -29,4 +33,133 @@ mul
 mul
 sub
 pop rdx
+ret
+
+SolveSquare:
+pop [0]
+pop rcx
+pop rbx
+pop rax
+push [0]
+
+push rax
+push 0
+je SolveLinear
+
+push rax
+push rbx
+push rcx
+call DISCR
+
+push rdx
+push 0
+jb NoRoots
+
+push rbx
+neg
+push rdx
+sqrt
+add
+push 2
+push rax
+mul
+div
+pop [1]
+
+push rbx
+neg
+push rdx
+sqrt
+sub
+push 2
+push rax
+mul
+div
+pop [2]
+
+ret
+
+SolveLinear:
+push rbx
+push 0
+je InfRoots
+
+push rcx
+neg
+push rbx
+div
+pop [1]
+pop [2]
+
+ret
+
+InfRoots:
+push 'I'
+pop [16]
+
+push 'n'
+pop [17]
+
+push 'f'
+pop [18]
+
+push ' '
+pop [19]
+
+push 'R'
+pop [20]
+
+push 'o'
+pop [21]
+
+push 'o'
+pop [22]
+
+push 't'
+pop [23]
+
+push 's'
+pop [24]
+
+push 0
+pop [1]
+push 0
+pop [2]
+
+mem
+
+ret
+
+NoRoots:
+push 'N'
+pop [17]
+
+push 'o'
+pop [18]
+
+push ' '
+pop [19]
+
+push 'R'
+pop [20]
+
+push 'o'
+pop [21]
+
+push 'o'
+pop [22]
+
+push 't'
+pop [23]
+
+push 's'
+pop [24]
+
+push 0
+pop [1]
+push 0
+pop [2]
+
+mem
+
 ret

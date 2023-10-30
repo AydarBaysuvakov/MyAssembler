@@ -5,7 +5,7 @@ pop rbx
 call factorial
 push rbx
 out
-hlt
+hlt ; halt
 
 factorial:
 push rax

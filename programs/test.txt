@@ -1,0 +1,15 @@
+push 34
+out
+pop [0]
+out
+push 25
+out
+pop [1]
+out
+push -34
+out
+pop [34]
+out
+push [0]
+out
+hlt

@@ -3,9 +3,9 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <string.h>
-#include "headers/constants.h"
-#include "headers/stack.h"
-#include "headers/hash.h"
+#include "../headers/constants.h"
+#include "stack.h"
+#include "hash.h"
 
 error_t MyStackCtor(Stack *stk, const char* name, const unsigned line, const char* file, const char* func)
     {
@@ -172,6 +172,25 @@ Elem_t StackPop(Stack *stk)
 #endif
 
     return ret_val;
+    }
+
+Elem_t StackTop(const Stack *stk)
+    {
+#ifdef DEBUG
+    StackState state = StackValid(stk);
+    if (state)
+        {
+        StackDump(stk, state);
+        }
+#endif
+
+    if (stk->size == 0)
+        {
+        printf("STACK is empty\n");
+        return POISON;
+        }
+
+    return stk->data[stk->size - 1];
     }
 
 error_t StackRealloc(Stack* stk, size_t new_capacity)

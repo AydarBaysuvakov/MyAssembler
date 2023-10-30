@@ -1,7 +1,7 @@
 #include <assert.h>
 #include <limits.h>
 #include <stdio.h>
-#include "headers/hash.h"
+#include "hash.h"
 
 Hash_t HashFunction(const char *array, size_t size)
     {

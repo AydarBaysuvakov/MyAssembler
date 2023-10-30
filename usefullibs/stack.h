@@ -101,6 +101,8 @@ error_t StackPush(Stack *stk, Elem_t value);
 
 Elem_t  StackPop(Stack *stk);
 
+Elem_t StackTop(const Stack *stk);
+
 error_t StackRealloc(Stack* stk, size_t new_capacity);
 
 StackState StackValid(Stack *stk);

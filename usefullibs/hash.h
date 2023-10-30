@@ -7,4 +7,4 @@ const Hash_t DEFAULT_HASH_VALUE = 0xA1DA2BA15;
 
 Hash_t  HashFunction(const char *array, size_t size);
 
-#endif//HASH_H_
+#endif //HASH_H
