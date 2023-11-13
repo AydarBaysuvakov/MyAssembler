@@ -7,7 +7,9 @@ pop rcx
 
 push rax
 push rbx
-push rcx
+push rcx ; Useless work
+
+; Docs
 call SolveSquare
 
 push [1]
@@ -95,12 +97,12 @@ ret
 
 InfRoots:
 push 'I'
+push 'n'
+push 'f'
 pop [16]
 
-push 'n'
 pop [17]
 
-push 'f'
 pop [18]
 
 push ' '

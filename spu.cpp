@@ -4,6 +4,7 @@
 #include <string.h>
 #include <math.h>
 #include <ctype.h>
+#include <time.h>
 #include "headers/constants.h"
 #include "usefullibs/oneginlib.h"
 #include "usefullibs/stack.h"
@@ -12,7 +13,6 @@
 
 // ISA -- instruction set architecture
 
-
 int main(int argc, char *argv[])
     {
     const char* file = nullptr;
@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
     if (argc < 2)
         {
         printf("Incorrect args number");
-        return FILE_ERROR;
+        return FileError;
         }
     else
         {
@@ -31,7 +31,12 @@ int main(int argc, char *argv[])
     return 0;
     }
 
-error_t MySpuCtor(SPU* spu, const char* exe_file, const char* name, const unsigned line, const char* file, const char* func)
+error_t MySpuCtor(SPU* spu,
+                  const char* exe_file,
+                  const char* name,
+                  const unsigned line,
+                  const char* file,
+                  const char* func)
     {
     assert(spu != NULL);
     assert(file != NULL);
@@ -47,7 +52,7 @@ error_t MySpuCtor(SPU* spu, const char* exe_file, const char* name, const unsign
     if (fp == nullptr)
         {
         perror("ERROR: cannot open file");
-        return FILE_ERROR;
+        return FileError;
         }
 
     spu->code_size = file_size(fp);
@@ -55,7 +60,7 @@ error_t MySpuCtor(SPU* spu, const char* exe_file, const char* name, const unsign
         {
         perror("ERROR: fstat() func returned -1");
         fclose(fp);
-        return FILE_ERROR;
+        return FileError;
         }
 
     spu->code = (unsigned char*) calloc(spu->code_size, sizeof(char));
@@ -63,7 +68,7 @@ error_t MySpuCtor(SPU* spu, const char* exe_file, const char* name, const unsign
         {
         perror("ERROR: cannot allocate memory");
         fclose(fp);
-        return ALLOCATION_ERROR;
+        return AllocationError;
         }
 
     fread(spu->code, sizeof(char), spu->code_size, fp);
@@ -80,13 +85,13 @@ error_t MySpuCtor(SPU* spu, const char* exe_file, const char* name, const unsign
     spu->file = file;
     spu->func = func;
 
-    if (SpuLogFileInit(spu, name) == FILE_ERROR)
+    if (SpuLogFileInit(spu, name) == FileError)
         {
         perror("ERROR: cannot open logfile");
-        return FILE_ERROR;
+        return FileError;
         }
 
-    return OK;
+    return Ok;
     }
 
 error_t SpuDtor(SPU* spu)
@@ -106,7 +111,7 @@ error_t SpuDtor(SPU* spu)
 
     fclose(spu->logfile);
 
-    return OK;
+    return Ok;
     }
 
 error_t SpuRun(const char* file)
@@ -135,11 +140,10 @@ error_t SpuRun(const char* file)
             default:
                 SpuDump(&spu);
                 printf("ERROR: BAD CODE, error_command = %d, %d, %d\n", command, spu.code[spu.ip], spu.ip);
-                return BAD_CODE;
+                return BadCode;
                 break;
             }
-        //printf(" %d, %d, %d\n", command, spu.code[spu.ip], spu.ip);
-        SpuDump(&spu);
+        //SpuDump(&spu);
         }
 
     #undef DEF_CMD
@@ -147,10 +151,11 @@ error_t SpuRun(const char* file)
 
     SpuDtor(&spu);
 
-    return OK;
+    return Ok;
     }
 
-error_t MySpuDump(const SPU *spu, const char* name, const unsigned line, const char* file, const char* func)
+error_t MySpuDump(const SPU *spu, const char* name, const unsigned line,
+                  const char* file, const char* func)
     {
 
     fprintf(spu->logfile, "SPU[%p] '%s' from %s(%u) %s()\n", spu, spu->name, spu->file, spu->line, spu->func);
@@ -173,10 +178,14 @@ error_t MySpuDump(const SPU *spu, const char* name, const unsigned line, const c
     fprintf(spu->logfile, "\n\tinstruction pointer = %d\n\n", spu->ip);
 
     fprintf(spu->logfile, "\tRegisters\n");
-    fprintf(spu->logfile, "\t\t rax: %d\n", spu->registers[0] / FIXED_POINT_MULTIPIER);
-    fprintf(spu->logfile, "\t\t rbx: %d\n", spu->registers[1] / FIXED_POINT_MULTIPIER);
-    fprintf(spu->logfile, "\t\t rcx: %d\n", spu->registers[2] / FIXED_POINT_MULTIPIER);
-    fprintf(spu->logfile, "\t\t rdx: %d\n", spu->registers[3] / FIXED_POINT_MULTIPIER);
+    fprintf(spu->logfile, "\t\t rax: %d\n", spu->registers[0]);
+    fprintf(spu->logfile, "\t\t rbx: %d\n", spu->registers[1]);
+    fprintf(spu->logfile, "\t\t rcx: %d\n", spu->registers[2]);
+    fprintf(spu->logfile, "\t\t rdx: %d\n", spu->registers[3]);
+    fprintf(spu->logfile, "\t\t rex: %d\n", spu->registers[4]);
+    fprintf(spu->logfile, "\t\t rfx: %d\n", spu->registers[5]);
+    fprintf(spu->logfile, "\t\t rgx: %d\n", spu->registers[6]);
+    fprintf(spu->logfile, "\t\t rhx: %d\n", spu->registers[7]);
 
     fprintf(spu->logfile, "\n\tMemory:");
     for (int i = 0; i < MEMORY_DUMP_LENGTH; ++i)
@@ -199,7 +208,7 @@ error_t MySpuDump(const SPU *spu, const char* name, const unsigned line, const c
 
     fprintf(spu->logfile, "\t}\n\n");
 
-    return OK;
+    return Ok;
     }
 
 error_t SpuLogFileInit(SPU *spu, const char* name)
@@ -211,10 +220,10 @@ error_t SpuLogFileInit(SPU *spu, const char* name)
     spu->logfile = fopen(file_name, "w");
     if (spu->logfile == NULL)
         {
-        return FILE_ERROR;
+        return FileError;
         }
 
-    return OK;
+    return Ok;
     }
 
 error_t MemDump(SPU *spu)
@@ -224,10 +233,10 @@ error_t MemDump(SPU *spu)
         printf("\n");
         for (int j = 0; j < MEMORY_DUMP_WIDTH; ++j)
             {
-            printf((isspace(spu->memory[i * MEMORY_DUMP_WIDTH + j]) || !spu->memory[i * MEMORY_DUMP_WIDTH + j]) ? "." : "%c", spu->memory[i * MEMORY_DUMP_WIDTH + j] / FIXED_POINT_MULTIPIER);
+            ColouredPrintf(BLACK, (isspace(spu->memory[i * MEMORY_DUMP_WIDTH + j]) || !spu->memory[i * MEMORY_DUMP_WIDTH + j]) ? "." : "%c", spu->memory[i * MEMORY_DUMP_WIDTH + j] / FIXED_POINT_MULTIPIER);
             }
         }
     printf("\n");
 
-    return OK;
+    return Ok;
     }

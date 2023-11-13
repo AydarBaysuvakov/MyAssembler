@@ -3,11 +3,11 @@
 
 const int FIXED_POINT_MULTIPIER = 100;
 const int ARG_TYPE_BORDER       = 5;
-const int REGISTER_COUNT        = 4;
-const int LABELS_COUNT          = 20;
-const int MEMORY_SIZE           = 128;
-const int MEMORY_DUMP_WIDTH     = 16;
-const int MEMORY_DUMP_LENGTH    = 8;
+const int REGISTER_COUNT        = 12;
+const int LABELS_COUNT          = 1000;
+const int MEMORY_SIZE           = 3200;
+const int MEMORY_DUMP_WIDTH     = 80;
+const int MEMORY_DUMP_LENGTH    = 40;
 
 enum ArgTypes
     {
@@ -34,16 +34,16 @@ enum Commands
 
 enum error_t
     {
-    OK                    = 0,
-    FILE_ERROR            = 1,
-    ALLOCATION_ERROR      = 2,
-    BUFFER_OVERFLOW_ERROR = 3,
-    CALCULATION_ERROR     = 4,
-    HASH_NOT_COMPARE      = 5,
-    SYNTAX_ERROR          = 6,
-    EMPTY_STACK           = 7,
-    BAD_CODE              = 8,
-    EXIT                  = 9
+    Ok                    = 0,
+    FileError             = 1,
+    AllocationError       = 2,
+    BufferOverflowError   = 3,
+    CalculationError      = 4,
+    HashNotCompare        = 5,
+    SyntaxError           = 6,
+    EmptyStack            = 7,
+    BadCode               = 8,
+    Exit                  = 9
     };
 
 #endif//CONSTANTS_H

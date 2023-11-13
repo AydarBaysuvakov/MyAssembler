@@ -9,9 +9,7 @@
 
 error_t MyStackCtor(Stack *stk, const char* name, const unsigned line, const char* file, const char* func)
     {
-#ifdef DEBUG
     assert(stk != NULL);
-#endif
 
     stk->size     = DEFAULT_SIZE;
     stk->capacity = DEFAULT_CAPACITY;
@@ -20,7 +18,7 @@ error_t MyStackCtor(Stack *stk, const char* name, const unsigned line, const cha
     if (data == NULL)
         {
         perror("ERROR: cannot allocate memory");
-        return ALLOCATION_ERROR;
+        return AllocationError;
         }
 
     stk->data = (Elem_t*) (data + ONE_CANARY * sizeof(Canary_t));
@@ -31,10 +29,10 @@ error_t MyStackCtor(Stack *stk, const char* name, const unsigned line, const cha
     stk->file = file;
     stk->func = func;
 
-    if (StkLogFileInit(stk, name) == FILE_ERROR)
+    if (StkLogFileInit(stk, name) == FileError)
         {
         perror("ERROR: cannot open logfile");
-        return FILE_ERROR;
+        return FileError;
         }
 
 #ifdef STACK_CANARY_PROT
@@ -46,7 +44,7 @@ error_t MyStackCtor(Stack *stk, const char* name, const unsigned line, const cha
     SetHash(stk);
 #endif
 
-    return OK;
+    return Ok;
     }
 
 error_t StackDtor(Stack *stk)
@@ -76,7 +74,7 @@ error_t StackDtor(Stack *stk)
 
     fclose(stk->logfile);
 
-    return OK;
+    return Ok;
     }
 
 error_t StkLogFileInit(Stack *stk, const char* name)
@@ -88,10 +86,10 @@ error_t StkLogFileInit(Stack *stk, const char* name)
     stk->logfile = fopen(file_name, "w");
     if (stk->logfile == NULL)
         {
-        return FILE_ERROR;
+        return FileError;
         }
 
-    return OK;
+    return Ok;
     }
 
 error_t FillStack(Stack *stk)
@@ -115,7 +113,7 @@ error_t FillStack(Stack *stk)
         stk->data[iter] = POISON;
         }
 
-    return OK;
+    return Ok;
     }
 
 error_t StackPush(Stack *stk, Elem_t value)
@@ -139,7 +137,7 @@ error_t StackPush(Stack *stk, Elem_t value)
     SetHash(stk);
 #endif
 
-    return OK;
+    return Ok;
     }
 
 Elem_t StackPop(Stack *stk)
@@ -207,14 +205,14 @@ error_t StackRealloc(Stack* stk, size_t new_capacity)
     if (data == NULL)
         {
         perror("ERROR: cannot allocate memory");
-        return ALLOCATION_ERROR;
+        return AllocationError;
         }
 
     stk->data     = (Elem_t*) (data + ONE_CANARY * sizeof(Canary_t));
     stk->capacity = new_capacity;
 
     FillStack(stk);
-    return OK;
+    return Ok;
     }
 
 StackState StackValid(Stack *stk)
@@ -305,7 +303,7 @@ error_t MyStackDump(const Stack *stk, StackState state, const char* name, const 
 
     fprintf(stk->logfile, "</pre>\n\n");
 
-    return OK;
+    return Ok;
     }
 
 const char* GetStackErrorBitMsg(size_t bit)
@@ -373,7 +371,7 @@ error_t SetHash(Stack *stk)
     stk->stack_hash = DEFAULT_HASH_VALUE;
     stk->stack_hash = StackHashFunction(stk);
 
-    return OK;
+    return Ok;
     }
 
 error_t StackHashCheck(Stack *stk)
@@ -385,11 +383,11 @@ error_t StackHashCheck(Stack *stk)
     Hash_t stack_hash = StackHashFunction(stk);
     if (stack_hash != curent_stk_hash)
         {
-        return HASH_NOT_COMPARE;
+        return HashNotCompare;
         }
     stk->stack_hash = curent_stk_hash;
 
-    return OK;
+    return Ok;
     }
 
 error_t DataHashCheck(Stack *stk)
@@ -399,10 +397,10 @@ error_t DataHashCheck(Stack *stk)
     Hash_t data_hash = DataHashFunction(stk);
     if (data_hash != stk->data_hash)
         {
-        return HASH_NOT_COMPARE;
+        return HashNotCompare;
         }
 
-    return OK;
+    return Ok;
     }
 
 
@@ -410,9 +408,9 @@ error_t HashCheck(Stack *stk)
     {
     assert(stk != NULL);
 
-    if ( DataHashCheck(stk)) return HASH_NOT_COMPARE;
-    if (StackHashCheck(stk)) return HASH_NOT_COMPARE;
+    if ( DataHashCheck(stk)) return HashNotCompare;
+    if (StackHashCheck(stk)) return HashNotCompare;
 
-    return OK;
+    return Ok;
     }
 #endif

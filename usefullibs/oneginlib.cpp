@@ -13,7 +13,7 @@ error_t TextCtor(Text *text, const char *file_name)
     make_buf(text, file_name);
     lines_partition(text);
 
-    return OK;
+    return Ok;
     }
 
 error_t TextDtor(Text *text)
@@ -26,7 +26,7 @@ error_t TextDtor(Text *text)
     text->buf_size = EMPTY;
     text->n_lines  = EMPTY;
 
-    return OK;
+    return Ok;
     }
 
 error_t make_buf(Text *text, const char *file_name)
@@ -38,7 +38,7 @@ error_t make_buf(Text *text, const char *file_name)
     if (fp == NULL)
         {
         perror("ERROR: cannot open file");
-        return FILE_ERROR;
+        return FileError;
         }
 
     text->buf_size = file_size(fp);
@@ -46,7 +46,7 @@ error_t make_buf(Text *text, const char *file_name)
         {
         perror("ERROR: fstat() func returned -1");
         fclose(fp);
-        return FILE_ERROR;
+        return FileError;
         }
 
     text->buf = (char*) malloc((text->buf_size + 1) * sizeof(char));
@@ -54,7 +54,7 @@ error_t make_buf(Text *text, const char *file_name)
         {
         perror("ERROR: cannot allocate memory");
         fclose(fp);
-        return ALLOCATION_ERROR;
+        return AllocationError;
         }
 
     if (fill_buf(text->buf, text->buf_size, fp))
@@ -62,12 +62,12 @@ error_t make_buf(Text *text, const char *file_name)
         perror("ERROR: buffer overflow");
         free(text->buf);
         fclose(fp);
-        return BUFFER_OVERFLOW_ERROR;
+        return BufferOverflowError;
         }
 
     fclose(fp);
 
-    return OK;
+    return Ok;
     }
 
 int fill_buf(char *buf, size_t buf_size, FILE *fp)
@@ -92,16 +92,16 @@ error_t lines_partition(Text *text)
     if (text->lines == NULL)
         {
         perror("ERROR: cannot allocate memory");
-        return ALLOCATION_ERROR;
+        return AllocationError;
         }
 
     if (fill_lines(text))
         {
         perror("ERROR: buffer overflow");
-        return BUFFER_OVERFLOW_ERROR;
+        return BufferOverflowError;
         }
 
-    return OK;
+    return Ok;
     }
 
 error_t fill_lines(Text *text)
@@ -118,11 +118,11 @@ error_t fill_lines(Text *text)
         {
         if (buf - text->buf > text->buf_size)
             {
-            return BUFFER_OVERFLOW_ERROR;
+            return BufferOverflowError;
             }
         if (line - text->lines > text->n_lines)
             {
-            return BUFFER_OVERFLOW_ERROR;
+            return BufferOverflowError;
             }
         if (*buf == '\n')
             {
@@ -136,7 +136,7 @@ error_t fill_lines(Text *text)
         }
     *line = nullptr;
 
-    return OK;
+    return Ok;
     }
 
 error_t text_to_file(Text* text, FILE* fp)
@@ -151,7 +151,7 @@ error_t text_to_file(Text* text, FILE* fp)
         fprintf(fp, "%s \n", *line);
         }
 
-    return OK;
+    return Ok;
     }
 
 error_t print_text(Text* text, const char* file_name)
@@ -163,20 +163,20 @@ error_t print_text(Text* text, const char* file_name)
     if (file_name == NULL)
         {
         text_to_file(text);
-        return OK;
+        return Ok;
         }
 
     FILE *fp = fopen(file_name, "w");
     if (fp == NULL)
         {
         perror("ERROR: cannot open file");
-        return FILE_ERROR;
+        return FileError;
         }
 
     text_to_file(text, fp);
     fclose(fp);
 
-    return OK;
+    return Ok;
     }
 
 size_t file_size(FILE *fp)

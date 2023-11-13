@@ -13,5 +13,7 @@ enum Colour
     RESET   = 0
     };
 
-void ColouredPrintf(Colour colour, FILE* fp, const char* format, ...);
+void ColouredfPrintf(Colour colour, FILE* fp, const char* format, ...);
+
+void ColouredPrintf(Colour colour, const char* format, ...);
 #endif // COLOUR_H

@@ -1,47 +1,51 @@
 #define PUSH(arg)   StackPush(&spu.stk, arg)
 #define POP()       StackPop(&spu.stk)
 #define TOP()       StackTop(&spu.stk)
-#define ZERO_DIV    printf("ERROR: dividing by zero");\
-                    return CALCULATION_ERROR;
+
+#define ZERO_DIV    do { printf("ERROR: dividing by zero");\
+                    return CalculationError; } while(0)
+
 #define INT_ARG     *((int*) &spu.code[spu.ip])
+
+#define COND_JUMP(cond)     {                                   \
+                            spu.ip++;                           \
+                            int a = POP();                      \
+                            int b = POP();                      \
+                            if (b cond a) spu.ip = INT_ARG - 1; \
+                            else spu.ip += sizeof(int) - 1;     \
+                            }
 
 
 DEF_CMD (push, 1,  1,   {
                         char arg_t = spu.code[spu.ip] >> ARG_TYPE_BORDER;
+                        spu.ip++;
                         if (arg_t & DataType)
                             {
-                            spu.ip++;
                             PUSH(INT_ARG);
-                            spu.ip += sizeof(int) - 1;
                             }
                         else if (arg_t & RegisterType)
                             {
-                            spu.ip++;
                             PUSH(spu.registers[INT_ARG]);
-                            spu.ip += sizeof(int) - 1;
                             }
                         else if (arg_t & MemoryType)
                             {
-                            spu.ip++;
                             PUSH(spu.memory[INT_ARG]);
-                            spu.ip += sizeof(int) - 1;
                             }
+                        spu.ip += sizeof(int) - 1;
                         })
 
 DEF_CMD (pop,  2,  1,   {
                         char arg_t = spu.code[spu.ip] >> ARG_TYPE_BORDER;
+                        spu.ip++;
                         if (arg_t & RegisterType)
                             {
-                            spu.ip++;
                             spu.registers[INT_ARG] = POP();
-                            spu.ip += sizeof(int) - 1;
                             }
                         else if (arg_t & MemoryType)
                             {
-                            spu.ip++;
                             spu.memory[INT_ARG] = POP();
-                            spu.ip += sizeof(int) - 1;
                             }
+                        spu.ip += sizeof(int) - 1;
                         })
 
 DEF_CMD (in,   3,  0,   {
@@ -52,6 +56,7 @@ DEF_CMD (in,   3,  0,   {
                         })
 
 DEF_CMD (out,  4,  0,   {
+                        SpuDump(&spu);
                         printf("Нынешнее значение: %f\n", (float) TOP() / FIXED_POINT_MULTIPIER);
                         })
 
@@ -117,16 +122,27 @@ DEF_CMD (sqrt, 13, 0,   {
                         PUSH((int) b);
                         })
 
-DEF_CMD (neg, 14, 0,   {
+DEF_CMD (neg, 14, 0,    {
                         PUSH(-POP());
                         })
 
-DEF_CMD (mem, 25, 0,   {
+DEF_CMD (mem, 25, 0,    {
+                        static struct timespec tw = {};
+                        tw.tv_sec = 0;
+                        tw.tv_nsec = 25000000;
+                        static struct timespec tr = {};
+                        nanosleep(&tw, &tr);
                         MemDump(&spu);
                         })
 
+DEF_CMD (set, 26, 1,   {
+                        spu.ip++;
+                        spu.memory[POP() / FIXED_POINT_MULTIPIER] = INT_ARG;
+                        spu.ip += sizeof(int) - 1;
+                        })
+
 DEF_CMD (hlt,  31, 0,   {
-                        return EXIT;
+                        return Exit;
                         })
 
 MAKE_COND_JUMP (jmp,  16,  {
@@ -134,53 +150,17 @@ MAKE_COND_JUMP (jmp,  16,  {
                             spu.ip = INT_ARG - 1;
                             })
 
-MAKE_COND_JUMP (jae,   17,  {
-                            spu.ip++;
-                            int a = POP();
-                            int b = POP();
-                            if (b >= a) spu.ip = INT_ARG - 1;
-                            else spu.ip += sizeof(int) - 1;
-                            })
+MAKE_COND_JUMP (jae,   17,  COND_JUMP(>=))
 
-MAKE_COND_JUMP (ja,  18,    {
-                            spu.ip++;
-                            int a = POP();
-                            int b = POP();
-                            if (b > a) spu.ip = INT_ARG - 1;
-                            else spu.ip += sizeof(int) - 1;
-                            })
+MAKE_COND_JUMP (ja,  18,    COND_JUMP(>))
 
-MAKE_COND_JUMP (jbe,   19,  {
-                            spu.ip++;
-                            int a = POP();
-                            int b = POP();
-                            if (b <= a) spu.ip = INT_ARG - 1;
-                            else spu.ip += sizeof(int) - 1;
-                            })
+MAKE_COND_JUMP (jbe,   19,  COND_JUMP(<=))
 
-MAKE_COND_JUMP (jb,  20,    {
-                            spu.ip++;
-                            int a = POP();
-                            int b = POP();
-                            if (b < a) spu.ip = INT_ARG - 1;
-                            else spu.ip += sizeof(int) - 1;
-                            })
+MAKE_COND_JUMP (jb,  20,    COND_JUMP(<))
 
-MAKE_COND_JUMP (je,   21,   {
-                            spu.ip++;
-                            int a = POP();
-                            int b = POP();
-                            if (a == b) spu.ip = INT_ARG - 1;
-                            else spu.ip += sizeof(int) - 1;
-                            })
+MAKE_COND_JUMP (je,   21,   COND_JUMP(==))
 
-MAKE_COND_JUMP (jne,  22,   {
-                            spu.ip++;
-                            int a = POP();
-                            int b = POP();
-                            if (a != b) spu.ip = INT_ARG - 1;
-                            else spu.ip += sizeof(int) - 1;
-                            })
+MAKE_COND_JUMP (jne,  22,   COND_JUMP(!=))
 
 MAKE_COND_JUMP (call, 23,   {
                             spu.ip++;

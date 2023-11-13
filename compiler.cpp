@@ -7,6 +7,8 @@
 #include "usefullibs/oneginlib.h"
 #include "headers/compiler.h"
 
+const char* const   DEFAULT_BIN_FILENAME  = "programs/out.bin";
+
 int main(int argc, char *argv[])
     {
     const char* file_from = nullptr;
@@ -15,7 +17,7 @@ int main(int argc, char *argv[])
     if (argc < 2)
         {
         printf("Incorrect args number");
-        return FILE_ERROR;
+        return FileError;
         }
     else if (argc == 2)
         {
@@ -49,18 +51,18 @@ error_t CompilerCtor(Compiler* comp, const char* file_from, const char* file_to)
     comp->code = (char*) calloc(comp->code_size, sizeof(char));
     if (comp->code == NULL)
         {
-        perror("ERROR: cannot allocate memory"); // try
-        return ALLOCATION_ERROR;
+        perror("ERROR: cannot allocate memory");
+        return AllocationError;
         }
 
     comp->file_to   = fopen(file_to,  "wb");
     if (comp->file_to == NULL)
         {
         perror("ERROR: cannot open file");
-        return FILE_ERROR;
+        return FileError;
         }
 
-    return OK;
+    return Ok;
     }
 
 error_t CompilerDtor(Compiler* comp)
@@ -75,7 +77,7 @@ error_t CompilerDtor(Compiler* comp)
     free(comp->code);
     fclose(comp->file_to);
 
-    return OK;
+    return Ok;
     }
 
 error_t DoCompilation(const char* file_from, const char* file_to)
@@ -93,7 +95,7 @@ error_t DoCompilation(const char* file_from, const char* file_to)
 
     CompilerDtor(&comp);
 
-    return OK;
+    return Ok;
     }
 
 error_t TextToCode(Compiler *comp)
@@ -152,7 +154,7 @@ error_t TextToCode(Compiler *comp)
             else if (*comand)
                 {
                 printf("ERROR: %s is wrong command code_pos = %ld\n", comand, comp->cur_pos);
-                return SYNTAX_ERROR;
+                return SyntaxError;
                 }
             }
         }
@@ -160,7 +162,7 @@ error_t TextToCode(Compiler *comp)
     #undef DEF_CMD
     #undef MAKE_COND_JUMP
 
-    return OK;
+    return Ok;
     }
 
 error_t AddArgToCode(const int cmd, char* data, Compiler* comp)
@@ -168,20 +170,18 @@ error_t AddArgToCode(const int cmd, char* data, Compiler* comp)
     assert(data != NULL);
     assert(comp != NULL);
 
-    const char is_cond_jump = (1 <= cmd && cmd <= 2) ? 0 : 1;
-
     SkipSpace(&data);
 
-    if ((isdigit(data[0]) || data[0] == '-' || data[0] == '+') && cmd == command_push)
+    if ((isdigit(data[0]) || data[0] == '-' || data[0] == '+') && ArgTypeIsData(cmd))
         {
         comp->code[comp->cur_pos] = cmd | CmdData;
         comp->cur_pos++;
 
-        int arg = (int) (atof(data) * FIXED_POINT_MULTIPIER); // errors
+        int arg = (int) (atof(data) * FIXED_POINT_MULTIPIER);
         *(int*)(comp->code + comp->cur_pos) = arg;
-        comp->cur_pos += sizeof(int); // typedef
+        comp->cur_pos += sizeof(int);
         }
-    else if (data[0] == '\'' && data[2] == '\'' && cmd == command_push)
+    else if (data[0] == '\'' && data[2] == '\'' && ArgTypeIsData(cmd))
         {
         comp->code[comp->cur_pos] = cmd | CmdData;
         comp->cur_pos++;
@@ -190,7 +190,7 @@ error_t AddArgToCode(const int cmd, char* data, Compiler* comp)
         comp->cur_pos += sizeof(int);
         data += 3;
         }
-    else if (data[0] == '[' && !is_cond_jump)
+    else if (data[0] == '[' && !IsCondJump(cmd))
         {
         comp->code[comp->cur_pos] = cmd | CmdMemory;
         comp->cur_pos++;
@@ -201,35 +201,35 @@ error_t AddArgToCode(const int cmd, char* data, Compiler* comp)
         }
     else if (isalpha(data[0]))
         {
-        int arg_found = 0;
-        for (int iter = 0; iter < (is_cond_jump) ? comp->labels_num : comp->registers_num; iter++)
+        bool arg_found = false;
+        for (int i = 0; i < (IsCondJump(cmd)) ? comp->labels_num : comp->registers_num; i++)
             {
-            if (((is_cond_jump) ? comp->labels[iter].name : comp->registers[iter].name) == NULL)
+            if (((IsCondJump(cmd)) ? comp->labels[i].name : comp->registers[i].name) == NULL)
                 {
                 break;
                 }
-            else if (!strncmp((is_cond_jump) ? comp->labels[iter].name : comp->registers[iter].name,\
-            data, (is_cond_jump) ? comp->labels[iter].length : comp->registers[iter].length))
+            else if (!strncmp((IsCondJump(cmd)) ? comp->labels[i].name : comp->registers[i].name,\
+            data, (IsCondJump(cmd)) ? comp->labels[i].length : comp->registers[i].length))
                 {
                 comp->code[comp->cur_pos] = cmd | CmdRegister;
                 comp->cur_pos++;
 
-                *(int*)(comp->code + comp->cur_pos) = (is_cond_jump) ? comp->labels[iter].index : comp->registers[iter].index;
+                *(int*)(comp->code + comp->cur_pos) = (IsCondJump(cmd)) ? comp->labels[i].index : comp->registers[i].index;
                 comp->cur_pos += sizeof(int);
 
-                arg_found = 1;
+                arg_found = true;
                 break;
                 }
             }
         if (!arg_found)
             {
             int index = comp->registers_num;
-            if (!is_cond_jump)
+            if (!IsCondJump(cmd))
                 {
                 if (comp->registers_num == REGISTER_COUNT)
                     {
-                    printf("SYNTAX ERROR: to many registers(available only 4, use memory)\n");
-                    return SYNTAX_ERROR;
+                    printf("SYNTAX ERROR: to many registers(available only 8, use memory)\n");
+                    return SyntaxError;
                     }
                 comp->registers[index].name    = data;
                 char* word = data;
@@ -242,14 +242,14 @@ error_t AddArgToCode(const int cmd, char* data, Compiler* comp)
             comp->code[comp->cur_pos] = cmd | CmdRegister;
             comp->cur_pos++;
 
-            *(int*)(comp->code + comp->cur_pos) = (is_cond_jump) ? -1 : comp->registers[index].index;
+            *(int*)(comp->code + comp->cur_pos) = (IsCondJump(cmd)) ? -1 : comp->registers[index].index;
             comp->cur_pos += sizeof(int);
             }
         }
     else
         {
         printf("ERROR: %s is wrong command\n", data);
-        return SYNTAX_ERROR;
+        return SyntaxError;
         }
 
     SkipLetter(&data);
@@ -258,10 +258,10 @@ error_t AddArgToCode(const int cmd, char* data, Compiler* comp)
     if (*data != '\0')
         {
         printf("ERROR: %s is wrong command\n", data);
-        return SYNTAX_ERROR;
+        return SyntaxError;
         }
 
-    return OK;
+    return Ok;
     }
 
 char** SkipSpace(char** data)
@@ -298,4 +298,30 @@ char** SkipTillCollon(char** data)
             }
 
     return data;
+    }
+
+bool IsCondJump(int cmd)
+    {
+    return cond_jmp <= cmd && cmd <= cond_call;
+    }
+
+bool IsStkCmd(int cmd)
+    {
+    return command_push <= cmd && cmd <= command_pop;
+    }
+
+int GetOpcode(int cell)
+    {
+    return cell & CmdField;
+    }
+
+
+int GetArgType(int cell)
+    {
+    return cell >> ARG_TYPE_BORDER;
+    }
+
+bool ArgTypeIsData(int cmd)
+    {
+    return cmd == command_push || cmd == command_set;
     }

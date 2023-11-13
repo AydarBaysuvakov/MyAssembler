@@ -7,6 +7,8 @@
 #include "usefullibs/oneginlib.h"
 #include "headers/disassembler.h"
 
+const char* const DEFAULT_TXT_FILENAME = "programs/program.txt";
+
 int main(int argc, char *argv[])
     {
     const char* file_from = nullptr;
@@ -15,7 +17,7 @@ int main(int argc, char *argv[])
     if (argc < 2)
         {
         printf("Incorrect args number");
-        return FILE_ERROR;
+        return FileError;
         }
     else if (argc == 2)
         {
@@ -27,13 +29,13 @@ int main(int argc, char *argv[])
         file_to   = argv[2];
         }
 
-    DoDisassemblation(file_from, file_to);
+    Disassemble(file_from, file_to);
     return 0;
     }
 
 error_t DisassemblerCtor(Disassembler* disasm, const char* file_from, const char* file_to)
     {
-    assert(disasm != NULL);
+    assert(disasm    != NULL);
     assert(file_from != NULL);
     assert(file_to   != NULL);
 
@@ -41,15 +43,16 @@ error_t DisassemblerCtor(Disassembler* disasm, const char* file_from, const char
     if (fp == nullptr)
         {
         perror("ERROR: cannot open file");
-        return FILE_ERROR;
+        return FileError;
         }
 
     disasm->code_size = file_size(fp);
     if (disasm->code_size == -1)
         {
         perror("ERROR: fstat() func returned -1");
+        // Perror("") saved_errno __LINE__ __FILE__ (... errno = 0 ...) strerror(errno)
         fclose(fp);
-        return FILE_ERROR;
+        return FileError;
         }
 
     disasm->code = (unsigned char*) calloc(disasm->code_size, sizeof(char));
@@ -57,7 +60,7 @@ error_t DisassemblerCtor(Disassembler* disasm, const char* file_from, const char
         {
         perror("ERROR: cannot allocate memory");
         fclose(fp);
-        return ALLOCATION_ERROR;
+        return AllocationError;
         }
 
     fread(disasm->code, sizeof(char), disasm->code_size, fp);
@@ -75,10 +78,11 @@ error_t DisassemblerCtor(Disassembler* disasm, const char* file_from, const char
     if (disasm->file_to == nullptr)
         {
         perror("ERROR: cannot open file");
-        return FILE_ERROR;
+        free(disasm->code);
+        return FileError;
         }
 
-    return OK;
+    return Ok;
     }
 
 error_t DisassemblerDtor(Disassembler* disasm)
@@ -92,10 +96,10 @@ error_t DisassemblerDtor(Disassembler* disasm)
     free(disasm->code);
     fclose(disasm->file_to);
 
-    return OK;
+    return Ok;
     }
 
-error_t DoDisassemblation(const char* file_from, const char* file_to)
+error_t Disassemble(const char* file_from, const char* file_to)
     {
     assert(file_from != NULL);
     assert(file_to   != NULL);
@@ -108,7 +112,7 @@ error_t DoDisassemblation(const char* file_from, const char* file_to)
 
     DisassemblerDtor(&disasm);
 
-    return OK;
+    return Ok;
     }
 
 error_t SearchLables(Disassembler *disasm)
@@ -119,25 +123,26 @@ error_t SearchLables(Disassembler *disasm)
 
     for (;disasm->cur_pos < disasm->code_size; disasm->cur_pos++)
         {
-        int cmd = disasm->code[disasm->cur_pos] & CmdField;
-        if (16 <= cmd && cmd <= 23)
+        int cmd = GetOpcode(disasm->code[disasm->cur_pos]);
+
+        if (IsCondJump(cmd))
             {
             disasm->cur_pos++;
-            int pos = FindLable(disasm, *((int*) &disasm->code[disasm->cur_pos]));
-            if (pos == -1)
+            int arg = FindLable(disasm, *((int*) &disasm->code[disasm->cur_pos]));
+            if (arg == kNotFound)
                 {
                 disasm->labels[disasm->labels_num] = *((int*) &disasm->code[disasm->cur_pos]);
                 disasm->labels_num++;
                 disasm->cur_pos += sizeof(int) - 1;
                 }
             }
-        else if (1 <= cmd && cmd <= 2)
+        else if (IsStkCmd(cmd))
             {
             disasm->cur_pos += sizeof(int);
             }
         }
 
-    return OK;
+    return Ok;
     }
 
 error_t CodeToText(Disassembler *disasm)
@@ -166,24 +171,24 @@ error_t CodeToText(Disassembler *disasm)
     for (; disasm->cur_pos < disasm->code_size; disasm->cur_pos++)
         {
         int lable = FindLable(disasm, disasm->cur_pos);
-        if (lable != -1)
+        if (lable != kNotFound)
             {
             fprintf(disasm->file_to, "lable%i:\n", lable);
             }
-        char command = disasm->code[disasm->cur_pos] & CmdField;
-        switch (command)
+        char cmd = GetOpcode(disasm->code[disasm->cur_pos]);
+        switch (cmd)
             {
             #include "headers/dsl.h"
             default:
-                printf("ERROR: BAD CODE, error_command = %d, %d, %ld\n", command, disasm->code[disasm->cur_pos], disasm->cur_pos);
-                return BAD_CODE;
+                printf("ERROR: BAD CODE, error_command = %d, %d, %ld\n", cmd, disasm->code[disasm->cur_pos], disasm->cur_pos);
+                return BadCode;
             }
         }
 
     #undef DEF_CMD
     #undef MAKE_COND_JUMP
 
-    return OK;
+    return Ok;
     }
 
 error_t AddArg(Disassembler* disasm, const char* name)
@@ -191,62 +196,76 @@ error_t AddArg(Disassembler* disasm, const char* name)
     assert(disasm != NULL);
     assert(name != NULL);
 
-    unsigned char cell     = disasm->code[disasm->cur_pos];
-    char arg_type = cell >> ARG_TYPE_BORDER;
-    char cmd      = cell & CmdField;
+    char arg_type = GetArgType(disasm->code[disasm->cur_pos]);
+    char cmd      =  GetOpcode(disasm->code[disasm->cur_pos]);
 
-    const char is_cond_jump = (1 <= cmd && cmd <= 2) ? 0 : 1;
+    fprintf(disasm->file_to, "%s ", name);
+    disasm->cur_pos++;
 
-    if (is_cond_jump)
+    if (IsCondJump(cmd))
         {
-        fprintf(disasm->file_to, "%s ", name);
-        disasm->cur_pos++;
-
         int lable = FindLable(disasm, *((int*) &disasm->code[disasm->cur_pos]));
         fprintf(disasm->file_to, "lable%i\n", lable);
-        disasm->cur_pos += sizeof(int) - 1;
         }
-    else if (arg_type == DataType)
-        {
-        fprintf(disasm->file_to, "%s ", name);
-        disasm->cur_pos++;
+    else
+        switch (arg_type)
+            {
+            case DataType:
+                {
+                float arg = (float) *(int*)(disasm->code + disasm->cur_pos) / FIXED_POINT_MULTIPIER;
+                fprintf(disasm->file_to, "%f\n", arg);
+                break;
+                }
+            case RegisterType:
+                {
+                fprintf(disasm->file_to, "reg%i\n", disasm->code[disasm->cur_pos]);
+                break;
+                }
+            case MemoryType:
+                {
+                int arg = *(int*)(disasm->code + disasm->cur_pos);
+                fprintf(disasm->file_to, "[%d]\n", arg);
+                break;
+                }
+            }
 
-        float arg = (float) *(int*)(disasm->code + disasm->cur_pos) / FIXED_POINT_MULTIPIER;
-        fprintf(disasm->file_to, "%f\n", arg);
-        disasm->cur_pos += sizeof(int) - 1;
-        }
-    else if (arg_type == RegisterType)
-        {
-        fprintf(disasm->file_to, "%s ", name);
-        disasm->cur_pos++;
-
-        fprintf(disasm->file_to, "reg%i\n", disasm->code[disasm->cur_pos]);
-        disasm->cur_pos += sizeof(int) - 1;
-        }
-    else if (arg_type == MemoryType)
-        {
-        fprintf(disasm->file_to, "%s ", name);
-        disasm->cur_pos++;
-
-        int arg = *(int*)(disasm->code + disasm->cur_pos);
-        fprintf(disasm->file_to, "[%d]\n", arg);
-        disasm->cur_pos += sizeof(int) - 1;
-        }
-
-    return OK;
+    disasm->cur_pos += sizeof(int) - 1;
+    return Ok;
     }
 
-int FindLable(Disassembler *disasm, int index)
+int FindLable(const Disassembler *disasm, int address)
     {
     assert(disasm != NULL);
+    assert(address >= 0);
 
-    for (int iter = 0; iter < disasm->labels_num; iter++)
+    for (int i = 0; i < disasm->labels_num; i++)
         {
-        if (disasm->labels[iter] == index)
+        if (disasm->labels[i] == address)
             {
-            return iter;
+            return i;
             }
         }
 
-    return -1;
+    return kNotFound;
+    }
+
+bool IsCondJump(int cmd)
+    {
+    return cond_jmp <= cmd && cmd <= cond_call;
+    }
+
+bool IsStkCmd(int cmd)
+    {
+    return command_push <= cmd && cmd <= command_pop;
+    }
+
+int GetOpcode(int cell)
+    {
+    return cell & CmdField;
+    }
+
+
+int GetArgType(int cell)
+    {
+    return cell >> ARG_TYPE_BORDER;
     }

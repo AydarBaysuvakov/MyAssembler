@@ -1,24 +1,38 @@
 in
 pop rax
-push 1
-pop rbx
 call factorial
 push rbx
 out
-hlt ; halt
+hlt
+
+; Factorial
+; Args: rax - n integer value
+; Destroys: rax, rbx
+; Returns: stack top element
+;
+; Performs...... f(n - 1) n
 
 factorial:
-push rax
-push 0
-je fact_end
-push rax
-push rax
-push 1
-sub
-pop rax
-call factorial
-push rbx
-mul
-pop rbx
+    push 1
+    pop rbx
+
+    push rax
+    push 0
+    je fact_end
+
+    push rax
+
+    push rax
+    push 1
+    sub
+
+    pop rax
+
+    call factorial
+
+    push rbx
+    mul
+    pop rbx
+
 :fact_end
-ret
+    ret

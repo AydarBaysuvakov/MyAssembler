@@ -1,11 +1,6 @@
 #ifndef COMPILER_H
 #define COMPILER_H
 
-// assembly language
-// assembler
-
-const char* const   DEFAULT_BIN_FILENAME  = "programs/out.bin";
-
 struct Parametr
     {
     char* name;
@@ -15,6 +10,7 @@ struct Parametr
 
 struct Compiler
     {
+
     FILE* file_to;
 
     Text program;
@@ -41,5 +37,12 @@ error_t AddArgToCode(const int com, char* data, Compiler* comp);
 char** SkipSpace(char** data);
 char** SkipLetter(char** data);
 char** SkipTillCollon(char** data);
+
+
+bool IsCondJump(int cmd);
+bool IsStkCmd(int cmd);
+int GetOpcode(int cell);
+int GetArgType(int cell);
+bool ArgTypeIsData(int cmd);
 
 #endif//COMPILER_H

@@ -15,9 +15,9 @@ struct SPU
     int registers[REGISTER_COUNT];
     int memory[MEMORY_SIZE];
 
-    unsigned char *code;
-    int   ip;
-    size_t code_size;
+    unsigned char   *code;
+    int             ip;
+    size_t          code_size;
 
     const char  *name;
     const char  *file;
