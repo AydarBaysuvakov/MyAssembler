@@ -3,13 +3,16 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <string.h>
-#include "../headers/constants.h"
+#include "errors.h"
+#include "logfiles.h"
 #include "stack.h"
 #include "hash.h"
 
-error_t MyStackCtor(Stack *stk, const char* name, const unsigned line, const char* file, const char* func)
+Error_t MyStackCtor(Stack *stk, const char* name, const unsigned line, const char* file, const char* func)
     {
+#ifdef DEBUG
     assert(stk != NULL);
+#endif
 
     stk->size     = DEFAULT_SIZE;
     stk->capacity = DEFAULT_CAPACITY;
@@ -29,9 +32,9 @@ error_t MyStackCtor(Stack *stk, const char* name, const unsigned line, const cha
     stk->file = file;
     stk->func = func;
 
-    if (StkLogFileInit(stk, name) == FileError)
+    if (LogFileInit(&stk->logfile, "logfile", name, "html") == FileError)
         {
-        perror("ERROR: cannot open logfile");
+        perror("ERROR: cannot open txt_logfile");
         return FileError;
         }
 
@@ -47,7 +50,7 @@ error_t MyStackCtor(Stack *stk, const char* name, const unsigned line, const cha
     return Ok;
     }
 
-error_t StackDtor(Stack *stk)
+Error_t StackDtor(Stack *stk)
     {
 #ifdef DEBUG
     StackState state = StackValid(stk);
@@ -77,22 +80,7 @@ error_t StackDtor(Stack *stk)
     return Ok;
     }
 
-error_t StkLogFileInit(Stack *stk, const char* name)
-    {
-    char file_name[LOG_FILE_MAX_NAME_LENGHT] = "logfiles/logfile(";
-    strncat(file_name,  name   , LOG_FILE_NAME_LENGHT);
-    strncat(file_name, ").html", LOG_FILE_NAME_LENGHT);
-
-    stk->logfile = fopen(file_name, "w");
-    if (stk->logfile == NULL)
-        {
-        return FileError;
-        }
-
-    return Ok;
-    }
-
-error_t FillStack(Stack *stk)
+Error_t FillStack(Stack *stk)
     {
 #ifdef DEBUG
     assert(stk != NULL);
@@ -116,7 +104,7 @@ error_t FillStack(Stack *stk)
     return Ok;
     }
 
-error_t StackPush(Stack *stk, Elem_t value)
+Error_t StackPush(Stack *stk, Elem_t value)
     {
 #ifdef DEBUG
     StackState state = StackValid(stk);
@@ -184,14 +172,13 @@ Elem_t StackTop(const Stack *stk)
 
     if (stk->size == 0)
         {
-        printf("STACK is empty\n");
         return POISON;
         }
 
     return stk->data[stk->size - 1];
     }
 
-error_t StackRealloc(Stack* stk, size_t new_capacity)
+Error_t StackRealloc(Stack* stk, size_t new_capacity)
     {
 #ifdef DEBUG
     StackState state = StackValid(stk);
@@ -215,9 +202,9 @@ error_t StackRealloc(Stack* stk, size_t new_capacity)
     return Ok;
     }
 
-StackState StackValid(Stack *stk)
+State_t StackValid(Stack *stk)
     {
-    StackState state = 0;
+    State_t state = 0;
 
     if (stk == NULL)                                           // 1
         {
@@ -267,7 +254,7 @@ StackState StackValid(Stack *stk)
     return state;
     }
 
-error_t MyStackDump(const Stack *stk, StackState state, const char* name, const unsigned line, const char* file, const char* func)
+Error_t MyStackDump(const Stack *stk, State_t state, const char* name, const unsigned line, const char* file, const char* func)
     {
     fprintf(stk->logfile, "<pre>\n\n");
 
@@ -308,8 +295,8 @@ error_t MyStackDump(const Stack *stk, StackState state, const char* name, const 
 
 const char* GetStackErrorBitMsg(size_t bit)
 {
-    const int  ERROR_COUNT = sizeof(StackState) * CHAR_BIT;
-    const char * const ERROR_MESSAGE[ERROR_COUNT] = {
+    static const int  ERROR_COUNT = sizeof(State_t) * CHAR_BIT;
+    static const char * const ERROR_MESSAGE[ERROR_COUNT] = {
         "Stack is nullptr",
         "Stack->data is nullptr",
         "Stack->size > Stack->capacity",
@@ -362,7 +349,7 @@ Hash_t DataHashFunction(const Stack *stk)
     return HashFunction((char*) stk->data - ONE_CANARY, stk->capacity + TWO_CANARY);
     }
 
-error_t SetHash(Stack *stk)
+Error_t SetHash(Stack *stk)
     {
     assert(stk != NULL);
 
@@ -374,7 +361,7 @@ error_t SetHash(Stack *stk)
     return Ok;
     }
 
-error_t StackHashCheck(Stack *stk)
+Error_t StackHashCheck(Stack *stk)
     {
     assert(stk != NULL);
 
@@ -390,7 +377,7 @@ error_t StackHashCheck(Stack *stk)
     return Ok;
     }
 
-error_t DataHashCheck(Stack *stk)
+Error_t DataHashCheck(Stack *stk)
     {
     assert(stk != NULL);
 
@@ -404,7 +391,7 @@ error_t DataHashCheck(Stack *stk)
     }
 
 
-error_t HashCheck(Stack *stk)
+Error_t HashCheck(Stack *stk)
     {
     assert(stk != NULL);
 

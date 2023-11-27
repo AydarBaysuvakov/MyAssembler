@@ -10,7 +10,6 @@ struct Parametr
 
 struct Compiler
     {
-
     FILE* file_to;
 
     Text program;
@@ -24,15 +23,15 @@ struct Compiler
     size_t code_size;
     };
 
-error_t CompilerCtor(Compiler *comp, const char* file_from, const char* file_to);
+Error_t CompilerCtor(Compiler *comp, const char* file_from, const char* file_to);
 
-error_t CompilerDtor(Compiler* comp);
+Error_t CompilerDtor(Compiler* comp);
 
-error_t DoCompilation(const char* file_from, const char* file_to);
+Error_t DoCompilation(const char* file_from, const char* file_to);
 
-error_t TextToCode(Compiler *comp);
+Error_t TextToCode(Compiler *comp);
 
-error_t AddArgToCode(const int com, char* data, Compiler* comp);
+Error_t AddArgToCode(const int com, char* data, Compiler* comp);
 
 char** SkipSpace(char** data);
 char** SkipLetter(char** data);

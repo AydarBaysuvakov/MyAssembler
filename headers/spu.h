@@ -27,16 +27,16 @@ struct SPU
     FILE *logfile;
     };
 
-error_t MySpuCtor(SPU* spu, const char* file, SPU_DEFN_ARGS);
+Error_t MySpuCtor(SPU* spu, const char* file, SPU_DEFN_ARGS);
 
-error_t SpuDtor(SPU* spu);
+Error_t SpuDtor(SPU* spu);
 
-error_t SpuRun(const char* file);
+Error_t SpuRun(const char* file);
 
-error_t MySpuDump(const SPU *spu, SPU_DEFN_ARGS);
+Error_t MySpuDump(const SPU *spu, SPU_DEFN_ARGS);
 
-error_t SpuLogFileInit(SPU *spu, const char* name);
+Error_t SpuLogFileInit(SPU *spu, const char* name);
 
-error_t MemDump(SPU *spu);
+Error_t MemDump(SPU *spu);
 
 #endif // SPU_H

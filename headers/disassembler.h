@@ -17,17 +17,17 @@ enum    {
         kNotFound = -1
         };
 
-error_t DisassemblerCtor(Disassembler* disasm, const char* file_from, const char* file_to);
+Error_t DisassemblerCtor(Disassembler* disasm, const char* file_from, const char* file_to);
 
-error_t DisassemblerDtor(Disassembler* disasm);
+Error_t DisassemblerDtor(Disassembler* disasm);
 
-error_t Disassemble(const char* file_from, const char* file_to);
+Error_t Disassemble(const char* file_from, const char* file_to);
 
-error_t SearchLables(Disassembler *disasm);
+Error_t SearchLables(Disassembler *disasm);
 
-error_t CodeToText(Disassembler *disasm);
+Error_t CodeToText(Disassembler *disasm);
 
-error_t AddArg(Disassembler* disasm, const char* name);
+Error_t AddArg(Disassembler* disasm, const char* name);
 
 int FindLable(const Disassembler *disasm, int address);
 

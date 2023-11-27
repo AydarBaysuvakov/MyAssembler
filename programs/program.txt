@@ -1,2 +1,23 @@
 in
 pop reg0
+call lable0
+push reg1
+out
+hlt
+lable0:
+push 1.000000
+pop reg1
+push reg0
+push 0.000000
+je lable1
+push reg0
+push reg0
+push 1.000000
+sub
+pop reg0
+call lable0
+push reg1
+mul
+pop reg1
+lable1:
+ret

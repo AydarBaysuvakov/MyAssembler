@@ -32,18 +32,4 @@ enum Commands
 #undef DEF_CMD
 #undef MAKE_COND_JUMP
 
-enum error_t
-    {
-    Ok                    = 0,
-    FileError             = 1,
-    AllocationError       = 2,
-    BufferOverflowError   = 3,
-    CalculationError      = 4,
-    HashNotCompare        = 5,
-    SyntaxError           = 6,
-    EmptyStack            = 7,
-    BadCode               = 8,
-    Exit                  = 9
-    };
-
 #endif//CONSTANTS_H

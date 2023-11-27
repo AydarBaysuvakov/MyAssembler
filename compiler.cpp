@@ -4,7 +4,8 @@
 #include <stdlib.h>
 #include <assert.h>
 #include "headers/constants.h"
-#include "usefullibs/oneginlib.h"
+#include "MyLib/errors.h"
+#include "MyLib/oneginlib.h"
 #include "headers/compiler.h"
 
 const char* const   DEFAULT_BIN_FILENAME  = "programs/out.bin";
@@ -33,7 +34,7 @@ int main(int argc, char *argv[])
     return 0;
     }
 
-error_t CompilerCtor(Compiler* comp, const char* file_from, const char* file_to)
+Error_t CompilerCtor(Compiler* comp, const char* file_from, const char* file_to)
     {
     assert(comp != NULL);
     assert(file_from != NULL);
@@ -65,7 +66,7 @@ error_t CompilerCtor(Compiler* comp, const char* file_from, const char* file_to)
     return Ok;
     }
 
-error_t CompilerDtor(Compiler* comp)
+Error_t CompilerDtor(Compiler* comp)
     {
     assert(comp != NULL);
 
@@ -80,7 +81,7 @@ error_t CompilerDtor(Compiler* comp)
     return Ok;
     }
 
-error_t DoCompilation(const char* file_from, const char* file_to)
+Error_t DoCompilation(const char* file_from, const char* file_to)
     {
     assert(file_from != NULL);
     assert(file_to   != NULL);
@@ -98,7 +99,7 @@ error_t DoCompilation(const char* file_from, const char* file_to)
     return Ok;
     }
 
-error_t TextToCode(Compiler *comp)
+Error_t TextToCode(Compiler *comp)
     {
     assert(comp != NULL);
 
@@ -165,7 +166,7 @@ error_t TextToCode(Compiler *comp)
     return Ok;
     }
 
-error_t AddArgToCode(const int cmd, char* data, Compiler* comp)
+Error_t AddArgToCode(const int cmd, char* data, Compiler* comp)
     {
     assert(data != NULL);
     assert(comp != NULL);

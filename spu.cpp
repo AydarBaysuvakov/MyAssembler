@@ -2,14 +2,13 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
-#include <math.h>
 #include <ctype.h>
+#include <math.h>
 #include <time.h>
+#include <sys/stat.h>
 #include "headers/constants.h"
-#include "usefullibs/oneginlib.h"
-#include "usefullibs/stack.h"
+#include "MyLib/mylib.h"
 #include "headers/spu.h"
-#include "usefullibs/colour.h"
 
 // ISA -- instruction set architecture
 
@@ -31,7 +30,7 @@ int main(int argc, char *argv[])
     return 0;
     }
 
-error_t MySpuCtor(SPU* spu,
+Error_t MySpuCtor(SPU* spu,
                   const char* exe_file,
                   const char* name,
                   const unsigned line,
@@ -55,13 +54,16 @@ error_t MySpuCtor(SPU* spu,
         return FileError;
         }
 
-    spu->code_size = file_size(fp);
-    if (spu->code_size == -1)
+    struct stat sb = {0};
+    int fd = fileno(fp);
+
+    if (fstat(fd, &sb) == -1)
         {
         perror("ERROR: fstat() func returned -1");
         fclose(fp);
         return FileError;
         }
+    spu->code_size = sb.st_size;
 
     spu->code = (unsigned char*) calloc(spu->code_size, sizeof(char));
     if (spu->code == nullptr)
@@ -85,16 +87,17 @@ error_t MySpuCtor(SPU* spu,
     spu->file = file;
     spu->func = func;
 
-    if (SpuLogFileInit(spu, name) == FileError)
+    if (LogFileInit(&spu->logfile, "logfile", name, "html") == FileError)
         {
         perror("ERROR: cannot open logfile");
+        free(spu->code);
         return FileError;
         }
 
     return Ok;
     }
 
-error_t SpuDtor(SPU* spu)
+Error_t SpuDtor(SPU* spu)
     {
     assert(spu != NULL);
 
@@ -114,7 +117,7 @@ error_t SpuDtor(SPU* spu)
     return Ok;
     }
 
-error_t SpuRun(const char* file)
+Error_t SpuRun(const char* file)
     {
     assert(file != NULL);
 
@@ -154,7 +157,7 @@ error_t SpuRun(const char* file)
     return Ok;
     }
 
-error_t MySpuDump(const SPU *spu, const char* name, const unsigned line,
+Error_t MySpuDump(const SPU *spu, const char* name, const unsigned line,
                   const char* file, const char* func)
     {
 
@@ -211,22 +214,7 @@ error_t MySpuDump(const SPU *spu, const char* name, const unsigned line,
     return Ok;
     }
 
-error_t SpuLogFileInit(SPU *spu, const char* name)
-    {
-    char file_name[LOG_FILE_MAX_NAME_LENGHT] = "logfiles/logfile(";
-    strncat(file_name,  name   , LOG_FILE_NAME_LENGHT);
-    strncat(file_name, ").html", LOG_FILE_NAME_LENGHT);
-
-    spu->logfile = fopen(file_name, "w");
-    if (spu->logfile == NULL)
-        {
-        return FileError;
-        }
-
-    return Ok;
-    }
-
-error_t MemDump(SPU *spu)
+Error_t MemDump(SPU *spu)
     {
     for (int i = 0; i < MEMORY_DUMP_LENGTH; ++i)
         {

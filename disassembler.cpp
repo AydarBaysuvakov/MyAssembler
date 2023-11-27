@@ -3,8 +3,9 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <sys/stat.h>
 #include "headers/constants.h"
-#include "usefullibs/oneginlib.h"
+#include "MyLib/errors.h"
 #include "headers/disassembler.h"
 
 const char* const DEFAULT_TXT_FILENAME = "programs/program.txt";
@@ -33,7 +34,7 @@ int main(int argc, char *argv[])
     return 0;
     }
 
-error_t DisassemblerCtor(Disassembler* disasm, const char* file_from, const char* file_to)
+Error_t DisassemblerCtor(Disassembler* disasm, const char* file_from, const char* file_to)
     {
     assert(disasm    != NULL);
     assert(file_from != NULL);
@@ -46,14 +47,16 @@ error_t DisassemblerCtor(Disassembler* disasm, const char* file_from, const char
         return FileError;
         }
 
-    disasm->code_size = file_size(fp);
-    if (disasm->code_size == -1)
+    struct stat sb = {0};
+    int fd = fileno(fp);
+
+    if (fstat(fd, &sb) == -1)
         {
         perror("ERROR: fstat() func returned -1");
-        // Perror("") saved_errno __LINE__ __FILE__ (... errno = 0 ...) strerror(errno)
         fclose(fp);
         return FileError;
         }
+    disasm->code_size = sb.st_size;
 
     disasm->code = (unsigned char*) calloc(disasm->code_size, sizeof(char));
     if (disasm->code == nullptr)
@@ -85,7 +88,7 @@ error_t DisassemblerCtor(Disassembler* disasm, const char* file_from, const char
     return Ok;
     }
 
-error_t DisassemblerDtor(Disassembler* disasm)
+Error_t DisassemblerDtor(Disassembler* disasm)
     {
     assert(disasm != NULL);
 
@@ -99,7 +102,7 @@ error_t DisassemblerDtor(Disassembler* disasm)
     return Ok;
     }
 
-error_t Disassemble(const char* file_from, const char* file_to)
+Error_t Disassemble(const char* file_from, const char* file_to)
     {
     assert(file_from != NULL);
     assert(file_to   != NULL);
@@ -115,7 +118,7 @@ error_t Disassemble(const char* file_from, const char* file_to)
     return Ok;
     }
 
-error_t SearchLables(Disassembler *disasm)
+Error_t SearchLables(Disassembler *disasm)
     {
     assert(disasm != NULL);
 
@@ -145,7 +148,7 @@ error_t SearchLables(Disassembler *disasm)
     return Ok;
     }
 
-error_t CodeToText(Disassembler *disasm)
+Error_t CodeToText(Disassembler *disasm)
     {
     assert(disasm != NULL);
 
@@ -191,7 +194,7 @@ error_t CodeToText(Disassembler *disasm)
     return Ok;
     }
 
-error_t AddArg(Disassembler* disasm, const char* name)
+Error_t AddArg(Disassembler* disasm, const char* name)
     {
     assert(disasm != NULL);
     assert(name != NULL);

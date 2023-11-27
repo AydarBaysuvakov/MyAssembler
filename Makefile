@@ -3,11 +3,11 @@ CFLAGS=-D _DEBUG -ggdb3 -std=c++17 -O0 -Wall -Wextra -Weffc++ -Waggressive-loop-
 compiler: oneginlib.o
 	g++ compiler.cpp ASM/oneginlib.o -o ASM/compiler # $(CFLAGS)
 
-spu: oneginlib.o stack.o colour.o
-	g++ spu.cpp ASM/oneginlib.o ASM/stack.o ASM/colour.o -o ASM/spu # $(CFLAGS)
+spu: stack.o colour.o logfiles.o
+	g++ spu.cpp ASM/stack.o ASM/colour.o ASM/logfiles.o -o ASM/spu # $(CFLAGS)
 
-disassembler: oneginlib.o
-	g++ disassembler.cpp ASM/oneginlib.o -o ASM/disassembler # $(CFLAGS)
+disassembler:
+	g++ disassembler.cpp -o ASM/disassembler # $(CFLAGS)
 
 compiler.o: compiler.cpp
 	g++ -c compiler.cpp -o ASM/compiler.o
@@ -15,20 +15,23 @@ compiler.o: compiler.cpp
 disassembler.o: disassembler.cpp
 	g++ -c disassembler.cpp -o ASM/disassembler.o
 
-hash.o: hash.cpp
-	g++ -c usefullibs/hash.cpp -o ASM/hash.o
-
-oneginlib.o: usefullibs/oneginlib.cpp
-	g++ -c usefullibs/oneginlib.cpp -o ASM/oneginlib.o
-
 spu.o: spu.cpp
 	g++ -c spu.cpp -o ASM/spu.o
 
-stack.o: usefullibs/stack.cpp
-	g++ -c usefullibs/stack.cpp -o ASM/stack.o
+hash.o: MyLib/hash.cpp
+	g++ -c MyLib/hash.cpp -o ASM/hash.o
 
-colour.o: usefullibs/colour.cpp
-	g++ -c usefullibs/colour.cpp -o ASM/colour.o
+oneginlib.o: MyLib/oneginlib.cpp
+	g++ -c MyLib/oneginlib.cpp -o ASM/oneginlib.o
+
+stack.o: MyLib/stack.cpp
+	g++ -c MyLib/stack.cpp -o ASM/stack.o
+
+colour.o: MyLib/colour.cpp
+	g++ -c MyLib/colour.cpp -o ASM/colour.o
+
+logfiles.o: MyLib/logfiles.cpp
+	g++ -c MyLib/logfiles.cpp -o ASM/logfiles.o
 
 clean:
 	rm -rf *.o

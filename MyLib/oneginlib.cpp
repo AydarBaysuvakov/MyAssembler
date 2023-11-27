@@ -3,20 +3,20 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <sys/stat.h>
-#include "../headers/constants.h"
+#include "errors.h"
 #include "oneginlib.h"
 
-error_t TextCtor(Text *text, const char *file_name)
+Error_t TextCtor(Text *text, const char *file_name)
     {
     assert(text != NULL);
 
-    make_buf(text, file_name);
-    lines_partition(text);
+    MakeBuf(text, file_name);
+    LinesPartition(text);
 
     return Ok;
     }
 
-error_t TextDtor(Text *text)
+Error_t TextDtor(Text *text)
     {
     assert(text != NULL);
 
@@ -29,7 +29,7 @@ error_t TextDtor(Text *text)
     return Ok;
     }
 
-error_t make_buf(Text *text, const char *file_name)
+Error_t MakeBuf(Text *text, const char *file_name)
     {
     assert(text      != NULL);
     assert(file_name != NULL);
@@ -41,11 +41,10 @@ error_t make_buf(Text *text, const char *file_name)
         return FileError;
         }
 
-    text->buf_size = file_size(fp);
+    text->buf_size = FileSize(fp);
     if (text->buf_size == -1)
         {
         perror("ERROR: fstat() func returned -1");
-        fclose(fp);
         return FileError;
         }
 
@@ -53,40 +52,40 @@ error_t make_buf(Text *text, const char *file_name)
     if (text->buf == nullptr)
         {
         perror("ERROR: cannot allocate memory");
-        fclose(fp);
         return AllocationError;
         }
 
-    if (fill_buf(text->buf, text->buf_size, fp))
+    if (FillBuf(text->buf, text->buf_size, fp))
         {
         perror("ERROR: buffer overflow");
-        free(text->buf);
-        fclose(fp);
         return BufferOverflowError;
         }
 
-    fclose(fp);
+    if (fclose(fp) == EOF)
+        {
+        perror("ERROR: cannot close file");
+        return FileError;
+        }
 
     return Ok;
     }
 
-int fill_buf(char *buf, size_t buf_size, FILE *fp)
+Error_t FillBuf(char *buf, size_t buf_size, FILE *fp)
     {
     assert(fp  != NULL);
     assert(buf != NULL);
-    assert(buf_size >= 0);
 
     fread(buf, sizeof(*buf), buf_size, fp);
 
-    return ferror(fp);
+    return Ok;
     }
 
-error_t lines_partition(Text *text)
+Error_t LinesPartition(Text *text)
     {
     assert(text      != NULL);
     assert(text->buf != NULL);
 
-    text->n_lines = lines_count(text->buf) + 1;
+    text->n_lines = LinesCount(text->buf) + 1;
 
     text->lines = (char**) malloc((text->n_lines + 1) * sizeof(char*));
     if (text->lines == NULL)
@@ -95,7 +94,7 @@ error_t lines_partition(Text *text)
         return AllocationError;
         }
 
-    if (fill_lines(text))
+    if (FillLines(text))
         {
         perror("ERROR: buffer overflow");
         return BufferOverflowError;
@@ -104,7 +103,7 @@ error_t lines_partition(Text *text)
     return Ok;
     }
 
-error_t fill_lines(Text *text)
+Error_t FillLines(Text *text)
     {
     assert(text        != NULL);
     assert(text->buf   != NULL);
@@ -139,7 +138,7 @@ error_t fill_lines(Text *text)
     return Ok;
     }
 
-error_t text_to_file(Text* text, FILE* fp)
+Error_t TextToFile(Text* text, FILE* fp)
     {
     assert(text != NULL);
     assert(fp   != NULL);
@@ -154,7 +153,7 @@ error_t text_to_file(Text* text, FILE* fp)
     return Ok;
     }
 
-error_t print_text(Text* text, const char* file_name)
+Error_t PrintText(Text* text, const char* file_name)
     {
     assert(text        != NULL);
     assert(text->buf   != NULL);
@@ -162,24 +161,18 @@ error_t print_text(Text* text, const char* file_name)
 
     if (file_name == NULL)
         {
-        text_to_file(text);
+        TextToFile(text);
         return Ok;
         }
 
     FILE *fp = fopen(file_name, "w");
-    if (fp == NULL)
-        {
-        perror("ERROR: cannot open file");
-        return FileError;
-        }
-
-    text_to_file(text, fp);
+    TextToFile(text, fp);
     fclose(fp);
 
     return Ok;
     }
 
-size_t file_size(FILE *fp)
+size_t FileSize(FILE *fp)
     {
     assert(fp != NULL);
 
@@ -194,7 +187,7 @@ size_t file_size(FILE *fp)
     return sb.st_size;
     }
 
-size_t lines_count(const char *buf)
+size_t LinesCount(const char *buf)
     {
     assert(buf != 0);
 
